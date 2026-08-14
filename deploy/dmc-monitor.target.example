@@ -1,0 +1,7 @@
+[Unit]
+Description=DMC monitoring runtime
+Wants=dmc-pose-edge-control.service dmc-pose-central.service dmc-gateway.service
+After=dmc-pose-edge-control.service dmc-pose-central.service dmc-gateway.service
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,18 @@
+[Unit]
+PartOf=dmc-monitor.target
+Description=DMC monitoring access service
+After=network-online.target dmc-pose-central.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/dmc/gateway
+ExecStart=/opt/dmc/gateway/run_internal.sh
+Restart=always
+RestartSec=3
+Environment=DMC_PRIVATE_CORE_URL=http://127.0.0.1:18000
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=default.target

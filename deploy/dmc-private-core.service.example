@@ -1,0 +1,21 @@
+[Unit]
+PartOf=dmc-monitor.target
+Description=DMC protected monitoring core
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/dmc/core
+ExecStart=/opt/dmc/core/run_internal.sh
+Restart=always
+RestartSec=3
+Environment=POSE_SERVER_HOST=127.0.0.1
+Environment=POSE_SERVER_PORT=18000
+Environment=POSE_SHADOW_RECORD=0
+Environment=POSE_TEMPORAL_SESSION_RECORD=0
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=default.target
