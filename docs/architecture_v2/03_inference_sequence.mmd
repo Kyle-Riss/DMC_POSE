@@ -1,0 +1,39 @@
+sequenceDiagram
+    participant C as LatestFrameCapture
+    participant W as Cheap Watcher
+    participant X as Camera Controller
+    participant S as Central Scheduler
+    participant P as Pose/Tracker
+    participant K as Kinematics + 6-class
+    participant T as TCN
+    participant F as Fusion/Event
+    participant U as Browser/API
+
+    C->>W: latest valid frame + timestamp
+    W->>X: motion score / rapid / scene change
+
+    alt EMPTY and quiet
+        X->>S: low-priority person probe
+        S->>P: latest frame only
+        P-->>X: person absent/present
+    else rapid motion
+        X->>S: P1 burst Pose request
+        S->>P: latest frame only
+        P-->>K: track skeleton + capture timestamp
+        K-->>F: global descent / rotation / posture
+        P-->>T: actual-time 10 Hz sample
+        T-->>F: ready + temporal probability
+        F-->>X: candidate or safe
+    end
+
+    alt candidate
+        X->>S: P0 verify requests
+        S->>P: latest frames at 10~20 Hz
+        P-->>K: verified track observations
+        K-->>F: kinematic evidence
+        T-->>F: temporal persistence
+        F-->>U: SHADOW_ALERT / ALERT event
+    else safe
+        F-->>U: status snapshot
+    end
+

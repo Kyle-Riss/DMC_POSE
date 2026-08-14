@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-07T06:57:12.784306+00:00",
+  "source_checkpoint": "/home/dmc/AI/DMC_POSE/runs/temporal_tcn/gmdcsa24_tcn/model.pt",
+  "source_sha256": "f93f257705acce418900cc85d0e39b4df55a48f47ba3e26377c29537338a71e4",
+  "artifact": "/home/dmc/AI/DMC_POSE/artifacts/edge/rpi5/tcn_baseline_v1/fall_tcn_normalized.ts",
+  "artifact_sha256": "a37dc1cb6a549d694dc129587355c7b42f10e54811e304bd2038634b5c06b59d",
+  "bytes": 292261,
+  "format": "torchscript",
+  "input_shape": [
+    "batch",
+    30,
+    109
+  ],
+  "output": "fall_probability",
+  "normalization_embedded": true,
+  "sequence_contract_version": null,
+  "feature_schema_version": null,
+  "max_abs_error_export": 0.0,
+  "max_abs_error_reload": 0.0,
+  "parity_passed": true,
+  "activation_status": "benchmark_required"
+}

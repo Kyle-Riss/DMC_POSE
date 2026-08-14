@@ -1,0 +1,28 @@
+flowchart LR
+    A["feature-only daily JSONL"] --> B["summarize_shadow_features.py"]
+    B --> C["bed-hours"]
+    B --> D["SHADOW_ALERT candidates"]
+    D --> E["Stable candidate ID<br/>camera + start time hash"]
+    E --> F["shadow_review.csv"]
+    F --> G{"Human review"}
+    G -->|"true_fall"| H["Real detected fall"]
+    G -->|"false_alarm"| I["False alarm"]
+    G -->|"staged_fall"| J["Staged test result"]
+    G -->|"pending / uncertain"| K["Gate remains NOT_READY"]
+
+    L["actual_events.csv"] --> M["Actual/staged fall ledger"]
+    H --> N["Candidate-event matching"]
+    J --> N
+    M --> N
+
+    C --> O["evaluate_shadow_operations.py"]
+    I --> O
+    N --> O
+    O --> P["operational_report.json"]
+    P --> Q["false alarms / bed-hour"]
+    P --> R["real fall sensitivity"]
+    P --> S["staged fall sensitivity"]
+    P --> T["PASS / FAIL / NOT_READY"]
+
+    U["Fusion v2"] --> U1["TCN + motion = VERIFY only"]
+    U --> U2["posture or kinematic proof required for SHADOW_ALERT"]

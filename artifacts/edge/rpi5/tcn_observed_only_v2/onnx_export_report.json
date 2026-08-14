@@ -1,0 +1,15 @@
+{
+  "artifact": "/home/dmc/AI/DMC_POSE/artifacts/edge/rpi5/tcn_observed_only_v2/fall_tcn_normalized.onnx",
+  "sha256": "0d649b00464bad6cf9caf62b0db7c971e4a3ff46195c1c55b46a4b31e60cdc15",
+  "bytes": 248057,
+  "format": "onnx",
+  "opset": 17,
+  "input_shape": [
+    "batch",
+    30,
+    109
+  ],
+  "max_abs_error": 0.0,
+  "parity_passed": true,
+  "activation_status": "benchmark_required"
+}

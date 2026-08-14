@@ -1,0 +1,25 @@
+flowchart LR
+    A["6대 RTSP 입력<br/>RPi는 H.264 송출만"] --> B["Latest-frame capture<br/>카메라별 약 20 FPS"]
+    B --> C["Cheap motion watcher<br/>160x90, 약 20 Hz"]
+    C --> D{"런타임 상태"}
+    D -->|"EMPTY"| E["Pose probe 0.75 Hz"]
+    D -->|"motion / occupied"| F["중앙 추론 scheduler<br/>latest-only + priority"]
+    E --> G["Auto bed ROI + tracking"]
+    F --> G
+    G --> H["Track-owned TCN 10 Hz"]
+    G --> I["Spatial / pose / kinematic"]
+    H --> J["Hybrid shadow fusion"]
+    I --> J
+
+    B --> K["/video/{camera_id}<br/>빠른 모니터링 경로"]
+    J --> L["/status + /viewer<br/>상태와 추론 결과"]
+
+    J --> M["0.5초 feature snapshot"]
+    M --> N["Bounded non-blocking queue"]
+    N --> O["일자별 JSONL writer"]
+    O --> P["shadow summary<br/>bed-hours + review candidates"]
+
+    Q["저장 금지"] -.-> M
+    Q --- Q1["원본 영상 / JPEG"]
+    Q --- Q2["17개 keypoint 좌표"]
+    Q --- Q3["RTSP URL"]

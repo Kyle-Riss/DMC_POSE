@@ -1,0 +1,9 @@
+{
+  "room_id": "room_174",
+  "rtsp_url": "rtsp://192.168.0.174:8554/stream",
+  "preset_id": "approx_seg",
+  "guardrail": true,
+  "bed_movable": true,
+  "bed_roi_path": "/home/dmc/AI/DMC_POSE/config/rooms/room_174_roi.json",
+  "rail_config_path": "/home/dmc/AI/DMC_POSE/config/rooms/room_174_rail.json"
+}

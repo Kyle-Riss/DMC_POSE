@@ -1,0 +1,88 @@
+{
+  "preset_id": "approx_seg",
+  "version": "0.1.0",
+  "description": "Unstable bed seg — dilated zone + ROI fallback (.161 RTSP)",
+  "bed_zone": {
+    "mask_dilate_px": 14,
+    "min_mask_area_ratio": 0.04,
+    "max_mask_area_ratio": 0.62,
+    "clip_mask_to_roi": true
+  },
+  "risk_thresholds": {
+    "overflow_low": 0.05,
+    "overflow_med": 0.15,
+    "overflow_high": 0.25
+  },
+  "motion": {
+    "ema_alpha": 0.3,
+    "hold_sec": 0.5
+  },
+  "inference": {
+    "resize_width": 640,
+    "bed_seg_conf": 0.01,
+    "kpt_conf": 0.3,
+    "skeleton_min_core_kpts": 1,
+    "skeleton_min_total_kpts": 5
+  },
+  "events": {
+    "hold_sec": 0.3,
+    "left_bed_overflow_min": 0.05,
+    "edge_speed_min_px_s": 30.0,
+    "min_valid_kpts": 5,
+    "min_torso_kpts": 1,
+    "attach_ratio_min": 0.28,
+    "on_seg_ratio_min": 0.55,
+    "edge_contact_max_ratio": 0.10,
+    "hip_on_seg_required": true
+  },
+  "scoring": {
+    "enabled": true,
+    "weights": {
+      "rail": 0.35,
+      "zone": 0.25,
+      "pose": 0.40
+    },
+    "pose_risk": {
+      "정면_누움": 0.10,
+      "엎드림_등": 0.20,
+      "옆누움_가까움": 0.50,
+      "옆누움_멀음": 0.30,
+      "앉음_중앙": 0.50,
+      "앉음_가장자리": 0.90,
+      "None": 0.0
+    },
+    "zone_risk": {
+      "joint_weights": { "hip": 0.5, "wrist": 0.25, "ankle": 0.25 },
+      "band": { "upper": 0.70, "center": 0.10, "lower": 0.70 },
+      "out_of_bed_joint": 1.0,
+      "kpt_conf": 0.3
+    },
+    "rail_risk": {
+      "both_up": 0.0,
+      "one_down": 0.5,
+      "both_down": 1.0,
+      "near_down_rail_bonus": 0.3,
+      "left_label": "Lt",
+      "right_label": "Rt"
+    },
+    "zones": {
+      "count": 3,
+      "labels": ["upper", "center", "lower"]
+    },
+    "out_of_bed": {
+      "enabled": true,
+      "trigger": "seg_off",
+      "score": 85.0
+    },
+    "levels": {
+      "LOW": 25,
+      "MED": 50,
+      "HIGH": 75
+    },
+    "temporal": {
+      "mode": "ema",
+      "window": 10,
+      "ema_alpha": 0.4
+    }
+  }
+}

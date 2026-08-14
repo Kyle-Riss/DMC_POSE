@@ -1,0 +1,21 @@
+[Unit]
+Description=DMC POSE CM4 heartbeat canary agent
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=moredigm
+Group=moredigm
+WorkingDirectory=/home/moredigm/dmc_pose_edge_canary
+ExecStart=/home/moredigm/dmc_pose_edge_canary/venv/bin/python /home/moredigm/dmc_pose_edge_canary/edge_node_agent.py --config /home/moredigm/dmc_pose_edge_canary/edge_node_bed_161_cm4_canary.json
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/moredigm/.local/state/dmc_pose
+
+[Install]
+WantedBy=multi-user.target

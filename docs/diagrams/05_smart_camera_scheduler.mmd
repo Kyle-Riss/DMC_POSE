@@ -1,0 +1,40 @@
+flowchart TD
+    RPI["RPi + Camera<br/>H.264 RTSP 20 FPS"] --> CAP["LatestFrameCapture<br/>항상 stream drain<br/>최신 frame/timestamp만 유지"]
+
+    CAP --> VIEW["빠른 모니터 경로<br/>MJPEG 또는 WebRTC/LL-HLS"]
+    VIEW --> BROWSER["/viewer<br/>AI 부하와 독립"]
+
+    CAP --> BOOT{"카메라 상태"}
+    BOOT -->|"시작/재연결"| SEG["침대 segmentation<br/>여러 검출 안정화"]
+    SEG --> CACHE["bed mask/bbox cache<br/>확장 감시 ROI 생성"]
+    CACHE --> EMPTY["EMPTY"]
+
+    CAP --> MOTION["저해상도 ROI 모션<br/>10~20 Hz CPU"]
+    CACHE --> MOTION
+
+    EMPTY --> PROBE["희소 person probe<br/>0.5~1 Hz"]
+    MOTION -->|"급격한 변화"| BURST["BURST<br/>Pose 10~20 Hz"]
+    PROBE -->|"사람 있음"| CALM["OCCUPIED_CALM"]
+    PROBE -->|"사람 없음"| EMPTY
+
+    CALM -->|"안정"| CALMPOSE["Pose 10 Hz (v1)<br/>2~5 Hz (v2 재학습 후)"]
+    CALM -->|"rapid motion"| BURST
+    CALMPOSE --> HISTORY["timestamp 기반<br/>skeleton history"]
+    BURST --> RAPID["전역 하강·회전<br/>관절 속도·가속도"]
+    BURST --> SAMPLE["실제 시간 10 Hz로<br/>TCN 입력 샘플링"]
+    HISTORY --> SAMPLE
+
+    SAMPLE --> TCN["TCN 3초 window<br/>fall probability"]
+    RAPID --> FUSION{"Hybrid fusion"}
+    TCN --> FUSION
+    CACHE --> FUSION
+
+    FUSION -->|"후보 아님"| CALM
+    FUSION -->|"낙상 후보"| VERIFY["VERIFY<br/>지속성·침대 관계 검증"]
+    VERIFY --> RESULT["결과값 side channel<br/>status / WebSocket / SSE"]
+    VERIFY --> RECOVERY["RECOVERY<br/>사건 후 추적"]
+    RECOVERY -->|"사람 안정"| CALM
+    RECOVERY -->|"사람 없음 timeout"| EMPTY
+
+    MOTION -. "조명/H.264 오류는<br/>트리거일 뿐 판정 아님" .-> FUSION
+

@@ -1,0 +1,12 @@
+{
+  "contract_version": "dmc_pose_edge_v1",
+  "bundle_version": "rpi5-benchmark-required-v1",
+  "status": "benchmark_required",
+  "created_at": "2026-08-07T12:00:00+09:00",
+  "target": "rpi5",
+  "feature_schema": "pose_temporal_109_v1",
+  "sample_hz": 10.0,
+  "temporal_rows": 30,
+  "artifacts": []
+}
+

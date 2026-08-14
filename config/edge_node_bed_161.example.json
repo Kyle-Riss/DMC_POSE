@@ -1,0 +1,20 @@
+{
+  "node_id": "rpi-bed-161",
+  "camera_id": "bed_161",
+  "server_url": "http://192.168.0.108:8020",
+  "software_version": "edge-agent-v1",
+  "model_bundle_version": null,
+  "heartbeat_interval_sec": 5,
+  "spool_path": "/var/lib/dmc-pose/outbox.sqlite3",
+  "capabilities": {
+    "camera_capture": true,
+    "rtsp_publish": true,
+    "motion_watcher": true,
+    "automatic_bed_roi": false,
+    "pose_inference": false,
+    "temporal_inference": false,
+    "fusion": false,
+    "event_frame_upload": false
+  }
+}
+

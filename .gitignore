@@ -1,0 +1,81 @@
+# Python bytecode and tooling caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and local environment variables
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+# IDE and OS metadata
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*~
+*.swp
+
+# Local camera/network configuration
+config/cameras.yaml
+
+# Model checkpoints and exported model artifacts
+*.pt
+*.pth
+*.ckpt
+*.keras
+*.h5
+*.onnx
+*.tflite
+*.engine
+*.pb
+mo_saved_model/
+weights/*
+!weights/.gitkeep
+
+# Training datasets and generated manifests
+*.csv
+!pose_dataset_six_sample.csv
+external_datasets/
+bed_seg/dataset/
+bed_seg/dataset_v1/
+bed_seg/rtsp_raw/
+bed_seg/rtsp_raw_800/
+bed_seg/_rtsp_cache/
+bed_seg/manual_labels/
+bed_seg/manual_labels_archive/
+bed_seg/label_preview/
+
+# Runtime, training, and validation output
+runs/
+bed_seg/runs/
+runtime_data/
+*.log
+*.pid
+metrics.png
+missing_frames_*.txt
+monitor/*.log*
+monitor/last_alerts.json
+monitor/webhook_received.jsonl
+monitor/cameras.json
+
+# Locally captured patient/camera imagery
+bed_roi/frame_ref.jpg
+bed_roi/roi_preview.jpg
+bed_roi/auto_cache/
+rail/reference/
+bed_seg/live_*.jpg
+
+# Temporary and backup source copies
+*.new
+*.bak
+*.backup
+bed_monitor.backup/

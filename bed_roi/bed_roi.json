@@ -1,0 +1,18 @@
+{
+  "ref_width": 640,
+  "ref_height": 360,
+  "bbox_px": [
+    207,
+    53,
+    556,
+    304
+  ],
+  "bbox_norm": [
+    0.324,
+    0.146,
+    0.868,
+    0.844
+  ],
+  "camera": "192.168.0.161",
+  "note": "640x360; bbox_norm from manual_labels; refine with pick_bed_roi.py"
+}

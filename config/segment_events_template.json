@@ -1,0 +1,25 @@
+{
+  "version": "0.1",
+  "description": "Raw 영상 구간별 이벤트 라벨 — 시계열 rule 검증용. Raw_data/meta/segment_events.json 으로 복사·확장.",
+  "event_labels": [
+    "in_bed_normal",
+    "edge_observe",
+    "out_bed_floor",
+    "out_bed_stand",
+    "exit_normal",
+    "unsafe_exit",
+    "occluded",
+    "unknown"
+  ],
+  "segments": [
+    {
+      "video_file": "Raw0 (3).mp4",
+      "start_sec": 0.0,
+      "end_sec": 30.0,
+      "event_label": "unknown",
+      "notes": "예: 120.5~145.0 침대 옆 바닥 쭈구려 앉음",
+      "labeled_by": "",
+      "labeled_at": ""
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "node_id": "rpi-bed-161",
+  "camera_id": "bed_161",
+  "server_url": "http://192.168.0.108:8020",
+  "api_token_file": "/home/moredigm/.config/dmc_pose/edge_api_token",
+  "software_version": "edge-agent-cm4-canary-v1",
+  "model_bundle_version": null,
+  "heartbeat_interval_sec": 5,
+  "spool_path": "/home/moredigm/.local/state/dmc_pose/outbox.sqlite3",
+  "sequence_path": "/home/moredigm/.local/state/dmc_pose/heartbeat_sequence",
+  "capture_health": {
+    "tcp_host": "127.0.0.1",
+    "tcp_port": 8554,
+    "required_processes": [
+      "mediamtx",
+      "rpicam-vid",
+      "ffmpeg"
+    ]
+  },
+  "capabilities": {
+    "camera_capture": true,
+    "rtsp_publish": true,
+    "motion_watcher": true,
+    "automatic_bed_roi": false,
+    "pose_inference": false,
+    "temporal_inference": false,
+    "fusion": false,
+    "event_frame_upload": false
+  },
+  "motion_watcher_config": {
+    "rtsp_url": "rtsp://127.0.0.1:8554/stream",
+    "ffmpeg_path": "/usr/bin/ffmpeg",
+    "target_fps": 5,
+    "width": 160,
+    "height": 90,
+    "pixel_threshold": 22,
+    "motion_ratio_threshold": 0.018,
+    "max_motion_ratio": 0.7,
+    "consecutive_hits": 2,
+    "burst_hold_sec": 3,
+    "retain_rgb": true,
+    "rgb_width": 320,
+    "rgb_height": 180
+  },
+  "pose_shadow_config": {
+    "rtsp_url": "rtsp://127.0.0.1:8554/stream",
+    "model_path": "/home/moredigm/dmc_pose_edge_canary/models/cm4-onnx-candidate-v1/yolo11n-pose.onnx",
+    "ffmpeg_path": "/usr/bin/ffmpeg",
+    "width": 640,
+    "height": 360,
+    "input_size": 320,
+    "confidence": 0.25,
+    "rotation_degrees": 90,
+    "capture_timeout_sec": 5,
+    "poll_interval_sec": 0.05,
+    "status_path": "/home/moredigm/.local/state/dmc_pose/pose_shadow_status.json",
+    "log_path": "/home/moredigm/.local/state/dmc_pose/pose_shadow_events.jsonl"
+  },
+  "pose_result_sequence_path": "/home/moredigm/.local/state/dmc_pose/pose_result_sequence",
+  "pose_shadow_model_bundle_version": "cm4-onnx-candidate-v1",
+  "sender_poll_sec": 0.1
+}

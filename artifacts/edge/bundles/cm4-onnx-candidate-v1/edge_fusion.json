@@ -1,0 +1,27 @@
+{
+  "schema_version": "edge_fusion_v1",
+  "pose_model": "yolo11n-pose.onnx",
+  "pose_imgsz": 320,
+  "pose_person_conf": 0.1,
+  "pose_note": "ONNX confidence is recalibrated; 0.1 removed all low-confidence detections on the 40-frame central RTSP sample while retaining observed persons",
+  "bed_seg_model": "bed_seg.onnx",
+  "bed_seg_imgsz": 320,
+  "bed_seg_conf": 0.5,
+  "bed_roi_policy": "bootstrap consensus then cache; refresh only on scene change or health degradation",
+  "empty_probe_hz": 0.75,
+  "occupied_pose_hz": 10.0,
+  "motion_watcher_fps": 20.0,
+  "motion_burst_hold_sec": 3.0,
+  "temporal_model": "fall_tcn_normalized.onnx",
+  "temporal_contract": "observed_only_10hz_v2",
+  "temporal_rows": 30,
+  "temporal_threshold": 0.5565,
+  "posture_model": "posture_six_fp32.tflite",
+  "event_policy": {
+    "server_second_pass": ["CANDIDATE", "FALL", "BED_EXIT_FALL"],
+    "continuous_frame_upload": false,
+    "pre_event_buffer_sec": 10.0,
+    "upload_only_on_request": true
+  },
+  "activation_status": "benchmark_required"
+}

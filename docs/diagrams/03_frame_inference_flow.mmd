@@ -1,0 +1,46 @@
+flowchart TD
+    INPUT["RPi H.264 RTSP frame"] --> DECODE["OpenCV / FFmpeg decode"]
+    DECODE --> RESIZE["width 640 resize"]
+    RESIZE --> SEG["YOLO Bed Segmentation"]
+    RESIZE --> MOTION["Motion Detector"]
+
+    SEG --> BED["Bed mask / ROI / zone"]
+    MOTION --> MACHINE{"카메라 상태머신"}
+
+    MACHINE -->|"사람 없음"| IDLE["IDLE · 약 3 FPS"]
+    MACHINE -->|"사람 후보"| DETECT["DETECTING · 10 FPS"]
+    DETECT -->|"버퍼 준비"| ANALYZE["ANALYZING · 20 FPS"]
+    ANALYZE --> TRACK["TRACKING · 15 FPS"]
+
+    DETECT --> POSE["YOLO Pose<br/>17 keypoints"]
+    ANALYZE --> POSE
+    TRACK --> POSE
+
+    POSE --> RULE["기존 Rule Scorer"]
+    POSE --> CLASS["Keras 6-class"]
+
+    POSE --> FEATURE["109차원 feature"]
+    CLASS --> FEATURE
+    FEATURE --> SAMPLE["10 Hz sampling"]
+    SAMPLE --> WINDOW["카메라별 30 × 109<br/>약 3초 causal window"]
+    WINDOW --> READY{"30행 준비?"}
+    READY -->|"아니오"| WARM["warming n/30"]
+    READY -->|"예 · 0.5초마다"| TCN["공유 Causal TCN"]
+    TCN --> PROB["tcn_fall_probability"]
+    PROB --> THRESH{"p ≥ 0.55654?"}
+    THRESH -->|"아니오"| NORMAL["Shadow Normal"]
+    THRESH -->|"예"| PERSIST{"2회 연속?"}
+    PERSIST -->|"예"| CANDIDATE["Shadow Candidate"]
+    PERSIST -->|"아니오"| NORMAL
+
+    RULE --> STATE["CameraState"]
+    CLASS --> STATE
+    WARM --> STATE
+    NORMAL --> STATE
+    CANDIDATE --> STATE
+
+    STATE --> STATUS["GET /status"]
+    RESIZE --> VIDEO["GET /video/bed_ID<br/>MJPEG"]
+
+    CANDIDATE -. "현재 실제 알림과 미연결" .-> ALERT["운영 경보"]
+    RULE --> ALERT

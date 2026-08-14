@@ -1,0 +1,28 @@
+flowchart LR
+    RPI["RPi per bed<br/>camera + H.264 RTSP only"]
+    CAP["LatestFrameCapture<br/>latest slot ~20 FPS"]
+    VIEW["Viewer /video<br/>AI-independent ~20 FPS"]
+    ROI["Auto Bed ROI cache<br/>bbox-only watcher lookup"]
+    WATCH["Cheap MotionWatcher<br/>160x90 gray, every frame<br/>no YOLO"]
+    EMPTY{"Runtime mode"}
+    PROBE["EMPTY pose probe<br/>~0.75 Hz"]
+    BURST["BURST pose request<br/>interrupt sleep immediately"]
+    POSE["YOLO Pose + 6-class<br/>central server"]
+    SAMPLE["Observed-only sampler<br/>70-150 ms / 30 real poses<br/>gap or track change = reset"]
+    TCN["TCN shadow<br/>probability only"]
+    API["/status<br/>rates + evidence"]
+
+    RPI --> CAP
+    CAP --> VIEW
+    CAP --> WATCH
+    ROI --> WATCH
+    WATCH -->|"2 consecutive hits"| EMPTY
+    EMPTY -->|"no burst / no person"| PROBE
+    EMPTY -->|"rapid motion"| BURST
+    PROBE --> POSE
+    BURST --> POSE
+    POSE --> SAMPLE --> TCN
+    CAP --> API
+    WATCH --> API
+    POSE --> API
+    TCN --> API

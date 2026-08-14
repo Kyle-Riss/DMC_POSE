@@ -1,0 +1,16 @@
+[Unit]
+Description=DMC POSE secure edge-control API
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/dmc/AI/DMC_POSE
+ExecStart=/home/dmc/anaconda3/envs/pose-cuda/bin/python /home/dmc/AI/DMC_POSE/run_edge_control_server_secure_v2.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

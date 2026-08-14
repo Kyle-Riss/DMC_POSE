@@ -1,0 +1,15 @@
+# pose 프로젝트 공통 의존성 (PyTorch CUDA 휠은 setup 스크립트에서 별도 설치)
+ultralytics>=8.3.0
+opencv-python>=4.8.0
+tensorflow>=2.15,<2.21
+pandas>=2.0.0
+numpy>=1.24.0,<3
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+tqdm>=4.65.0
+imutils>=0.5.4
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+pydantic>=2.0.0
+# SCRFD 등 ONNX GPU 추론 (선택)
+onnxruntime-gpu>=1.18.0

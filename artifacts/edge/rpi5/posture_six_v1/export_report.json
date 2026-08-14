@@ -1,0 +1,18 @@
+{
+  "artifact": "/home/dmc/AI/DMC_POSE/artifacts/edge/rpi5/posture_six_v1/posture_six_fp32.tflite",
+  "sha256": "678c476a6d9a8d4f158d05030b61c7b02e7a40db60164dcccdc60cd85f22ecb9",
+  "bytes": 172616,
+  "format": "tflite",
+  "input_shape": [
+    "batch",
+    34
+  ],
+  "output_shape": [
+    "batch",
+    6
+  ],
+  "max_abs_error": 1.1920928955078125e-07,
+  "argmax_agreement": 1.0,
+  "parity_passed": true,
+  "activation_status": "benchmark_required"
+}

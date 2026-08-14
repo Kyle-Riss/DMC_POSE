@@ -1,0 +1,105 @@
+flowchart LR
+    subgraph RPI["RPi Camera Node × 6"]
+        CAM["Camera Capture"]
+        ENC["H.264 Encoder"]
+        RTSP["RTSP Publisher"]
+        CAM --> ENC --> RTSP
+    end
+
+    subgraph VIDEO["Video Plane — AI와 독립"]
+        GW["Media Gateway"]
+        VIEW["Browser Viewer"]
+        GW -->|"WebRTC / LL-HLS"| VIEW
+    end
+
+    subgraph CAPTURE["Central Capture Plane"]
+        ADAPTER["Per-camera Capture Adapter"]
+        QUALITY["M1 Frame Quality Gate"]
+        LATEST["Latest Frame Mailbox<br/>backlog = 0"]
+        ADAPTER --> QUALITY --> LATEST
+    end
+
+    RTSP --> GW
+    RTSP --> ADAPTER
+
+    subgraph CONTEXT["고정 장면 Context"]
+        BED["M2 Auto Bed ROI"]
+        ROISTATE["roi_state<br/>NOT_READY / READY / DEGRADED<br/>analysis_state와 독립"]
+        ZONE["M3 Auto Zones<br/>CORE / EDGE / OUTSIDE_NEAR"]
+        BED --> ROISTATE
+        BED --> ZONE
+    end
+
+    subgraph SCREEN["저비용 Screening"]
+        MOTION["M4 Cheap Watcher<br/>20 Hz / 160×90"]
+        OCC["M5 Occupancy Gate<br/>EMPTY probe 1 Hz"]
+    end
+
+    subgraph SCHED["M12 Central Scheduler"]
+        MB["(model, camera) latest mailbox"]
+        PRI["P0 VERIFY<br/>P1 BURST<br/>P2 OCCUPIED<br/>P3 BOOTSTRAP<br/>P4 PROBE"]
+        POSEBATCH["Pose micro-batch<br/>initial max 3 / wait ≤20 ms<br/>benchmark pending"]
+        BEDRUN["BedSeg single/latest execution"]
+        MB --> PRI
+        PRI --> POSEBATCH
+        PRI --> BEDRUN
+    end
+
+    subgraph HEAVY["Shared AI Runtime — weights 1회 load"]
+        POSE["M6 Pose + Tracking"]
+        POSTURE["M9 6-class Posture"]
+        SAMPLE["M7 Actual 10 Hz Sampler<br/>source_pts → decode_mono_ts<br/>dt &gt;150 ms reset"]
+        KIN["M8 Kinematic Observer"]
+        TCN["M10 TCN v1 Shadow"]
+        POSE --> POSTURE
+        POSE --> SAMPLE --> TCN
+        POSE --> KIN
+    end
+
+    subgraph DECISION["M11 Hybrid Fusion"]
+        REL["Primary Track + Bed Relation"]
+        FAST["Path A<br/>rapid/large motion<br/>+ structural confirmation"]
+        SLOW["Path B<br/>TCN persistent + kinematic<br/>+ low/lying or recovery failure"]
+        FUSION["Hybrid Fusion"]
+        EXIT["BED_EXIT Event"]
+        FALL["FALL Shadow"]
+        BOTH["BED_EXIT_FALL Shadow"]
+        SHADOW["SHADOW_ALERT only"]
+        REL --> FUSION
+        FAST --> FUSION
+        SLOW --> FUSION
+        FUSION --> EXIT
+        FUSION --> FALL
+        FUSION --> BOTH
+        FALL --> SHADOW
+        BOTH --> SHADOW
+    end
+
+    subgraph OUTPUT["State / Evidence Plane"]
+        API["/api/v2/status"]
+        EVENT["Event Recorder"]
+        REVIEW["NVR/operator-linked Review"]
+    end
+
+    LATEST --> MOTION
+    LATEST --> MB
+    MOTION --> OCC
+    MOTION --> MB
+    OCC --> MB
+    POSEBATCH --> POSE
+    BEDRUN --> BED
+    POSE --> REL
+    ZONE --> REL
+    ROISTATE --> REL
+    MOTION --> FAST
+    KIN --> FAST
+    POSTURE --> FAST
+    TCN --> SLOW
+    KIN --> SLOW
+    POSTURE --> SLOW
+    FUSION --> API
+    ROISTATE --> API
+    EXIT --> EVENT
+    SHADOW --> EVENT
+    EVENT --> REVIEW
+    API -. "JSON overlay" .-> VIEW

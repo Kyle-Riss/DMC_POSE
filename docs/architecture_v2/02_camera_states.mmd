@@ -1,0 +1,35 @@
+stateDiagram-v2
+    [*] --> OFFLINE
+
+    OFFLINE --> BOOTSTRAP: RTSP 유효 프레임 연속 수신
+    BOOTSTRAP --> EMPTY: ROI 준비 + no person
+    BOOTSTRAP --> OCCUPIED_CALM: ROI 준비 + person
+    BOOTSTRAP --> OFFLINE: frame timeout
+
+    EMPTY --> OCCUPIED_CALM: person probe 확인
+    EMPTY --> BURST: interaction-zone rapid motion
+    EMPTY --> BOOTSTRAP: scene change / ROI invalid
+    EMPTY --> OFFLINE: frame timeout
+
+    OCCUPIED_CALM --> BURST: rapid motion / fast skeleton change
+    OCCUPIED_CALM --> EMPTY: person TTL 만료 + empty confirm
+    OCCUPIED_CALM --> BOOTSTRAP: scene change / ROI invalid
+    OCCUPIED_CALM --> OFFLINE: frame timeout
+
+    BURST --> VERIFY: fall evidence
+    BURST --> OCCUPIED_CALM: 안정 + candidate 없음
+    BURST --> EMPTY: person 없음 확인
+    BURST --> OFFLINE: frame timeout
+
+    VERIFY --> ALERT: confirmation criteria 충족
+    VERIFY --> RECOVERY: safe/recovered/insufficient evidence
+    VERIFY --> OFFLINE: frame timeout
+
+    ALERT --> RECOVERY: alert hold 종료
+    ALERT --> OFFLINE: frame timeout
+
+    RECOVERY --> OCCUPIED_CALM: person 안정
+    RECOVERY --> EMPTY: person TTL 만료
+    RECOVERY --> BURST: renewed rapid motion
+    RECOVERY --> OFFLINE: frame timeout
+

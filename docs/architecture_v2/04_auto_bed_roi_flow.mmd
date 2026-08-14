@@ -1,0 +1,26 @@
+flowchart TD
+    A["RPi 카메라 프레임<br/>침대당 1대"] --> B["Latest-frame capture<br/>뷰어와 AI 분리"]
+    B --> C{"자동 ROI가<br/>READY인가?"}
+
+    C -- "아니오" --> D["침대 세그 실행<br/>매 3번째 분석 프레임"]
+    D --> E["후보 mask/bbox/confidence 수집"]
+    E --> F{"최근 후보 3개 이상<br/>median IoU ≥ 0.75?"}
+    F -- "아니오" --> G["ROI_NOT_READY<br/>판정에 ROI 사용 금지"]
+    G --> D
+    F -- "예" --> H["다수결 mask + median bbox<br/>카메라 ID별 자동 캐시"]
+
+    C -- "예" --> I["캐시 ROI 사용<br/>침대 세그 생략"]
+    H --> I
+    I --> J["저비용 장면 변화 감시"]
+    J --> K{"카메라 이동/화각 변화가<br/>3회 연속인가?"}
+    K -- "예" --> L["캐시 무효화<br/>ROI_NOT_READY"]
+    L --> D
+    K -- "아니오" --> M{"5분 갱신 시점인가?"}
+    M -- "예" --> N["침대 세그 1회 갱신"]
+    N --> O{"기존 ROI와<br/>IoU ≥ 0.75?"}
+    O -- "예" --> I
+    O -- "아니오" --> L
+    M -- "아니오" --> I
+
+    I --> P["Pose + 6-class + TCN<br/>중앙 서버 추론"]
+    P --> Q["상태/확률/경보 값만 제공"]

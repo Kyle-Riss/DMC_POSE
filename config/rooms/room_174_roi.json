@@ -1,0 +1,11 @@
+{
+  "ref_width": 640,
+  "ref_height": 360,
+  "bbox_norm": [
+    0.300,
+    0.150,
+    0.850,
+    0.850
+  ],
+  "note": "Test ROI for room 174"
+}

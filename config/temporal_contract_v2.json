@@ -1,0 +1,68 @@
+{
+  "contract_version": "dmc_pose_temporal_contract_v2",
+  "feature_schema": "pose_temporal_109_v1",
+  "sequence_contract": "observed_only_10hz_v2",
+  "manifest_schema": "temporal_manifest_v2",
+  "feature_count": 109,
+  "feature_blocks": [
+    {
+      "name": "normalized_xy",
+      "start": 0,
+      "end_exclusive": 34
+    },
+    {
+      "name": "confidence",
+      "start": 34,
+      "end_exclusive": 51
+    },
+    {
+      "name": "joint_visibility",
+      "start": 51,
+      "end_exclusive": 68
+    },
+    {
+      "name": "posture_probabilities",
+      "start": 68,
+      "end_exclusive": 74
+    },
+    {
+      "name": "person_detected",
+      "start": 74,
+      "end_exclusive": 75
+    },
+    {
+      "name": "visibility_masked_velocity",
+      "start": 75,
+      "end_exclusive": 109
+    }
+  ],
+  "pose_model": {
+    "path": "yolo11m-pose.pt",
+    "sha256": "29b17eaf3a3117cbea906090dbedf9159f7c6a49db58ec8b99ed2dfde1cf6eb2"
+  },
+  "posture_model": {
+    "path": "my_model_six_check.keras",
+    "sha256": "82f4314c0bef77340747cd1b3b2c0941e0f43b0ef7fbf9120d48b6f55fb3f673"
+  },
+  "joint_confidence_threshold": 0.25,
+  "minimum_visible_joints": 5,
+  "target_hz": 10.0,
+  "minimum_interval_sec": 0.07,
+  "maximum_interval_sec": 0.15,
+  "window_rows": 30,
+  "missing_observation_row": "forbidden",
+  "previous_pose_copy": false,
+  "track_change": "reset",
+  "gap_over_maximum_interval": "reset_then_accept_new_observation",
+  "timestamp_priority": [
+    "source_pts",
+    "decode_mono_ts"
+  ],
+  "offline_timestamp_priority": [
+    "container_pts",
+    "frame_index_over_fps_fallback"
+  ],
+  "whole_person_missing_policy": "do_not_append",
+  "missing_joint_policy": "zero_normalized_coordinate_with_visibility_zero",
+  "canonical_feature_name_source": "temporal_features.temporal_feature_names"
+}

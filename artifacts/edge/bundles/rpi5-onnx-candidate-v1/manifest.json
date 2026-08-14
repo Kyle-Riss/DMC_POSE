@@ -1,0 +1,47 @@
+{
+  "contract_version": "dmc_pose_edge_v1",
+  "bundle_version": "rpi5-onnx-candidate-v1",
+  "status": "benchmark_required",
+  "created_at": "2026-08-07T07:04:02.467834+00:00",
+  "target": "rpi5",
+  "feature_schema": "pose_temporal_109_v1",
+  "sample_hz": 10.0,
+  "temporal_rows": 30,
+  "artifacts": [
+    {
+      "role": "bed_seg",
+      "filename": "bed_seg.onnx",
+      "sha256": "7f81cad433df8f29e06d81315722c9020a9674c8adc6b7d9fa97b46ee63cd14a",
+      "bytes": 11456643,
+      "format": "onnx"
+    },
+    {
+      "role": "pose",
+      "filename": "yolo11n-pose.onnx",
+      "sha256": "3e12d16569a70e66a75bddb7f32dfda2edbcb62a0508675d323ff6c735642756",
+      "bytes": 11609073,
+      "format": "onnx"
+    },
+    {
+      "role": "posture",
+      "filename": "posture_six_fp32.tflite",
+      "sha256": "678c476a6d9a8d4f158d05030b61c7b02e7a40db60164dcccdc60cd85f22ecb9",
+      "bytes": 172616,
+      "format": "tflite"
+    },
+    {
+      "role": "temporal",
+      "filename": "fall_tcn_normalized.onnx",
+      "sha256": "0d649b00464bad6cf9caf62b0db7c971e4a3ff46195c1c55b46a4b31e60cdc15",
+      "bytes": 248057,
+      "format": "onnx"
+    },
+    {
+      "role": "fusion_config",
+      "filename": "edge_fusion.json",
+      "sha256": "c2395d1458db959c978e5d735b28084189cbd8ddf61947fb7aee6d884b076204",
+      "bytes": 1032,
+      "format": "json"
+    }
+  ]
+}

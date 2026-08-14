@@ -1,0 +1,32 @@
+{
+  "preset_id": "default",
+  "version": "0.1.0",
+  "description": "RTSP .161 / 640x360 batch+live defaults",
+  "risk_thresholds": {
+    "overflow_low": 0.05,
+    "overflow_med": 0.15,
+    "overflow_high": 0.25
+  },
+  "motion": {
+    "ema_alpha": 0.3,
+    "hold_sec": 0.5
+  },
+    "inference": {
+    "resize_width": 640,
+    "bed_seg_conf": 0.01,
+    "kpt_conf": 0.3,
+    "skeleton_min_core_kpts": 1,
+    "skeleton_min_total_kpts": 5
+  },
+  "events": {
+    "hold_sec": 0.3,
+    "left_bed_overflow_min": 0.05,
+    "edge_speed_min_px_s": 30.0,
+    "min_valid_kpts": 5,
+    "min_torso_kpts": 1,
+    "attach_ratio_min": 0.35,
+    "on_seg_ratio_min": 0.65,
+    "edge_contact_max_ratio": 0.10,
+    "hip_on_seg_required": true
+  }
+}

@@ -1,0 +1,22 @@
+[Unit]
+Description=DMC POSE edge heartbeat and result agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dmc-pose
+Group=dmc-pose
+WorkingDirectory=/opt/dmc_pose
+ExecStart=/opt/dmc_pose/venv/bin/python /opt/dmc_pose/edge_node_agent.py --config /etc/dmc_pose/node.json
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/dmc_pose
+
+[Install]
+WantedBy=multi-user.target
+

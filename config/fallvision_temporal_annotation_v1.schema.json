@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fallvision_temporal_annotation_v1",
+  "title": "FallVision temporal fall annotation",
+  "type": "object",
+  "required": [
+    "video_id",
+    "annotation_status"
+  ],
+  "properties": {
+    "video_id": {
+      "type": "string"
+    },
+    "fall_onset_frame": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "first loss of normal support or postural control"
+    },
+    "impact_frame": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "body or major body part reaches bed, floor, or furniture"
+    },
+    "post_fall_stable_frame": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "post-impact pose becomes stable"
+    },
+    "fall_end_frame": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "fall event ends or recovery behavior begins"
+    },
+    "onset_earliest_frame": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "onset_latest_frame": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "annotation_status": {
+      "enum": [
+        "unreviewed",
+        "in_progress",
+        "complete",
+        "needs_adjudication",
+        "excluded"
+      ]
+    },
+    "annotation_confidence": {
+      "enum": [
+        "",
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "annotator": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "ordering_constraints": [
+    "onset_earliest_frame <= fall_onset_frame <= onset_latest_frame",
+    "fall_onset_frame <= impact_frame <= post_fall_stable_frame <= fall_end_frame"
+  ],
+  "ground_truth_policy": "automatic motion proposals are suggestions only; human confirmation is required"
+}
