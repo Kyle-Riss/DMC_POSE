@@ -105,6 +105,81 @@ flowchart TB
 - TCN history는 카메라 전체가 아니라 primary person track별로 관리합니다.
 - Viewer 영상과 AI 상태 갱신은 서로 독립적입니다.
 
+### 실제 구현 파일 매핑
+
+아래 표는 개념 이름이 아니라 현재 source tree에서 실제로 연결되는 모듈과 책임입니다.
+
+| 실행 단계 | 실제 구현 | 런타임 책임 |
+|---|---|---|
+| 시작 스크립트 | `run_all_cameras.sh` | 환경변수와 모델 파일을 확인하고 중앙 FastAPI 런타임을 시작 |
+| 중앙 Orchestrator | `server_all_cameras.py` | 카메라 구성, 모델 1회 로드, camera loop, 공유 상태, Viewer/API 수명주기 관리 |
+| 최신 프레임 수신 | `latest_frame_capture.py` / `LatestFrameCapture` | RTSP를 계속 읽고 `frame_seq`와 timestamp가 붙은 최신 프레임만 제공 |
+| 사전 이벤트 ring buffer | `frame_buffer.py` / `FrameBuffer` | 후보 사건 직전 프레임을 제한된 메모리에 유지 |
+| 저비용 움직임 | `motion_watcher.py` / `MotionWatcher` | downscale frame 기반 motion과 rapid-motion wake signal 생성 |
+| 카메라 상태 | `analysis_state_machine.py` / `CameraAnalysisStateMachine` | `EMPTY`, `OCCUPIED_CALM`, `BURST`, `VERIFY`, `RECOVERY` 전이와 실행 주기 결정 |
+| 중앙 GPU 조정 | `inference_scheduler.py` / `LatestInferenceScheduler` | `(model, camera)`별 mailbox 하나, 새 요청 supersede, deadline/stale drop, priority·fairness 관리 |
+| 침대 ROI | `auto_bed_roi.py` / `AutoBedROIManager` | segmentation 결과 안정화, scene fingerprint, cache/fallback 관리 |
+| 공간 기하 | `spatial_geometry.py` | ROI 방향 보정, bed 후보 선택, skeleton-bed coverage 계산 |
+| Pose 후보 필터 | `pose_candidate_filter.py` | 약한/깨진 person 후보 제거 및 tracking bbox 선택 |
+| 다중 사람 추적 | `person_tracker.py` / `MultiPersonTracker` | 사람별 track 유지와 primary patient 연속성 제공 |
+| 현재 자세 보조 | `bed_monitor/*` 및 Keras predictor | 현재 keypoint 자세를 보조 문맥으로 변환 |
+| 109D feature | `temporal_features.py` | 17 keypoint와 파생값을 학습/라이브 공통 feature vector로 변환 |
+| TCN 모델 | `temporal_model.py` / `FallTCN` | causal temporal convolution network 정의 |
+| Live TCN | `live_temporal.py` / `TemporalModelService`, `TemporalShadowRunner` | checkpoint·정규화 로드, track window와 persistence 관리 |
+| Hybrid 사건 판단 | `hybrid_fusion.py` / `HybridFusion` | motion, kinematics, posture, bed relation, TCN을 결합해 phase/result 생성 |
+| 비동기 replay | `async_replay_worker.py`, `pre_event_replay.py` | 실시간 camera loop를 막지 않고 후보 직전 구간을 재추론 |
+| 학습 근거 기록 | `shadow_feature_recorder.py`, `temporal_session_recorder.py` | shadow feature와 명시적 사건 session 기록 |
+| Edge 전송 신뢰성 | `edge_outbox_v1.py` / `EdgeOutboxSender` | compact message의 pending/ack/retry 관리 |
+| Edge 제어 API | `run_edge_control_server_secure_v2.py` | 인증된 edge health·bundle/canary 제어 서버 진입점 |
+| 입력 계약 | `config/temporal_contract_v2.json` | target Hz, window, feature schema와 missing/track 규칙 고정 |
+| Edge bundle 계약 | `config/edge_model_bundle_v1.json` | 배포 artifact, hash, 장비 호환 정보의 기준 |
+| 근거 시각화 | `scripts/build_fall_event_evidence.py` | 사건 JSONL을 그래프·요약 JSON·보고서 근거로 고정 |
+
+### 중앙 프로세스 내부 호출 관계
+
+```mermaid
+flowchart LR
+    RUN[run_all_cameras.sh] --> APP[server_all_cameras.py]
+    APP --> CAP[LatestFrameCapture]
+    APP --> POOL[ParallelInferencePool]
+    APP --> FSM[CameraAnalysisStateMachine]
+    APP --> SCHED[LatestInferenceScheduler]
+    APP --> ROI[AutoBedROIManager]
+    APP --> TRACK[MultiPersonTracker]
+    APP --> TEMP[TemporalShadowRunner]
+    APP --> FUSION[HybridFusion]
+    APP --> REPLAY[AsyncReplayWorker]
+    APP --> HTTP[FastAPI endpoints]
+
+    CAP -->|frame + seq + capture ts| FSM
+    FSM -->|priority + deadline| SCHED
+    SCHED -->|pose / seg outcome| APP
+    ROI -->|mask + bbox + source + stability| TRACK
+    TRACK -->|primary track + keypoints| TEMP
+    TEMP -->|ready + probability + persistence| FUSION
+    FUSION -->|phase + event + reasons| HTTP
+    REPLAY -->|pre-event evidence| FUSION
+```
+
+### 실제 HTTP 경계
+
+| Endpoint | 소비자 | 의미 |
+|---|---|---|
+| `/viewer` | 로컬 운영 브라우저 | 다중 카메라 video plane과 상태 overlay |
+| `/video/{camera_id}` | Viewer | continuous MJPEG fallback stream |
+| `/image/{camera_id}` | 진단/초기 화면 | 해당 카메라의 최신 JPEG snapshot |
+| `/status` | 기존 Viewer | 기존 호환 전체 상태 snapshot |
+| `/api/v2/status` | 신규 client | versioned fleet 상태 |
+| `/api/v2/status/{camera_id}` | 신규 client | 특정 카메라 상태와 freshness |
+| `/health/live` | process supervisor | 프로세스 생존 여부 |
+| `/health/ready` | 배포·운영 도구 | 모델과 필수 runtime 준비 여부 |
+| `/health/cameras` | 운영 진단 | 카메라 fleet 연결 상태 |
+| `/metrics` | monitoring | scheduler·capture·event 지표 |
+| `/recorder/status` | 데이터 수집 도구 | shadow recorder 상태 |
+| `/temporal-recorder/status` | temporal 수집 도구 | 사건 session recorder 상태 |
+
+`/video` 요청이 200이어도 AI 결과가 최신이라는 의미는 아닙니다. client는 상태의 capture/result freshness와 TCN ready를 별도로 확인해야 합니다.
+
 ## 3. 영상과 AI 결과의 분리
 
 ```mermaid
