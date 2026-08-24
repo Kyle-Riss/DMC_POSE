@@ -18,7 +18,8 @@
 14. `PHASE_06_HYBRID_FUSION.md` — 공간·pose·motion·TCN shadow 결합
 15. `PHASE_07_MODEL_AUDIT.md` — TCN 성숙도와 shadow-only 근거
 16. `PHASE_08_FEATURE_RECORDING.md` — 영상 없이 운영 feature 기록
-17. `PHASE_09_REVIEW_AND_CALIBRATION.md` — 리뷰 ledger와 정책별 평가
+17. `13_CENTRAL_MAX_CADENCE_CONTRACT.md` — 중앙 20Hz 최대 cadence, 단일 decode, 모델별 시간축과 외부 baseline 격리 계약
+18. `PHASE_09_REVIEW_AND_CALIBRATION.md` — 리뷰 ledger와 정책별 평가
 
 Mermaid:
 
@@ -35,4 +36,3 @@ Mermaid:
 - `10_phase9_review_calibration_flow.mmd`
 
 이 디렉토리는 Architecture V2의 설계 기준선이다. 기존 `docs/` 문서는 현재 구현 설명 또는 이전 설계 자료로 취급한다.
-

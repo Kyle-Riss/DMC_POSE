@@ -1,0 +1,49 @@
+{
+  "report": "observed_pose_extraction_quality_v1",
+  "accuracy_claim": false,
+  "feature_schema_version": "pose_temporal_109_v1",
+  "sequence_contract_version": "observed_only_20hz_v1",
+  "sample_hz": 20.0,
+  "video_count": 100,
+  "successful_videos": 100,
+  "csv_count": 100,
+  "empty_csv_count": 10,
+  "source_duration_sec": 551.5,
+  "elapsed_sec": 100.5,
+  "offline_realtime_factor": 5.488,
+  "mean_visible_joints_per_observation": 13.8174,
+  "totals": {
+    "decoded_frames": 16545,
+    "pose_probes": 11026,
+    "rows": 1769,
+    "no_primary": 8004,
+    "duplicate_skip": 1253,
+    "non_monotonic_skip": 0,
+    "gap_reset": 1517,
+    "track_reset": 19,
+    "pose_observation_coverage": 0.160439,
+    "no_primary_rate": 0.725921,
+    "gap_resets_per_1000_probes": 137.584
+  },
+  "by_camera": {
+    "unknown": {
+      "decoded_frames": 16545,
+      "pose_probes": 11026,
+      "rows": 1769,
+      "no_primary": 8004,
+      "duplicate_skip": 1253,
+      "non_monotonic_skip": 0,
+      "gap_reset": 1517,
+      "track_reset": 19,
+      "pose_observation_coverage": 0.160439,
+      "no_primary_rate": 0.725921,
+      "gap_resets_per_1000_probes": 137.584
+    }
+  },
+  "limitations": [
+    "positive-only dataset; do not train or evaluate as a standalone corpus",
+    "subject identity is unavailable",
+    "official training/testing subsets mix clips from the same source videos",
+    "metrics describe Pose observation quality and compute throughput, not fall accuracy"
+  ]
+}

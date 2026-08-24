@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from temporal_features import FEATURE_SCHEMA_VERSION, temporal_feature_names
+from temporal_sequence import cadence_interval_bounds, observed_sequence_contract
 
 WINDOW_SCHEMA_VERSION = "pose_tcn_window_v2_observed_only"
 MIN_INTERVAL_SEC = 0.070
@@ -49,7 +50,7 @@ def feature_matrix(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     return matrix, names
 
 
-def _contract_segments(df: pd.DataFrame) -> list[pd.DataFrame]:
+def _contract_segments(df: pd.DataFrame, *, min_interval_sec: float = MIN_INTERVAL_SEC, max_interval_sec: float = MAX_INTERVAL_SEC) -> list[pd.DataFrame]:
     observed = df[df["person_detected"].astype(bool)].copy()
     if observed.empty:
         return []
@@ -63,20 +64,20 @@ def _contract_segments(df: pd.DataFrame) -> list[pd.DataFrame]:
         boundary[1:] = (
             (explicit_sequence.iloc[1:].to_numpy() != explicit_sequence.iloc[:-1].to_numpy())
             | (track.iloc[1:].to_numpy() != track.iloc[:-1].to_numpy())
-            | (dt < MIN_INTERVAL_SEC - 1e-9)
-            | (dt > MAX_INTERVAL_SEC + 1e-9)
+            | (dt < min_interval_sec - 1e-9)
+            | (dt > max_interval_sec + 1e-9)
             | (dt <= 0.0)
         )
     observed["_contract_segment"] = np.cumsum(boundary)
     return [group.reset_index(drop=True) for _, group in observed.groupby("_contract_segment", sort=False)]
 
 
-def windows_from_video(df: pd.DataFrame, window_rows: int, stride_rows: int) -> tuple[list[np.ndarray], list[int], list[dict], list[str]]:
+def windows_from_video(df: pd.DataFrame, window_rows: int, stride_rows: int, *, min_interval_sec: float = MIN_INTERVAL_SEC, max_interval_sec: float = MAX_INTERVAL_SEC) -> tuple[list[np.ndarray], list[int], list[dict], list[str]]:
     names = temporal_feature_names()
     windows: list[np.ndarray] = []
     targets: list[int] = []
     metadata: list[dict] = []
-    for segment in _contract_segments(df):
+    for segment in _contract_segments(df, min_interval_sec=min_interval_sec, max_interval_sec=max_interval_sec):
         if len(segment) < window_rows:
             continue
         features, segment_names = feature_matrix(segment)
@@ -127,15 +128,34 @@ def main() -> int:
 
     window_rows = int(round(args.window_sec * args.sample_hz))
     stride_rows = int(round(args.stride_sec * args.sample_hz))
+    min_interval_sec, max_interval_sec = cadence_interval_bounds(args.sample_hz)
+    sequence_contract_version = observed_sequence_contract(args.sample_hz)
     if window_rows <= 0 or stride_rows <= 0:
         raise ValueError("window and stride must be positive")
 
     all_by_split: dict[str, dict[str, list]] = {split: {"x": [], "y": [], "meta": []} for split in ("train", "val", "test")}
     feature_names = temporal_feature_names()
     csv_files = sorted(args.features_dir.glob("*/*.csv"))
+    empty_csv_files: list[str] = []
+    loaded_csv_count = 0
     for csv_path in csv_files:
-        df = pd.read_csv(csv_path)
-        windows, targets, metadata, names = windows_from_video(df, window_rows, stride_rows)
+        try:
+            df = pd.read_csv(csv_path)
+        except pd.errors.EmptyDataError:
+            empty_csv_files.append(str(csv_path.resolve()))
+            continue
+        if df.empty:
+            empty_csv_files.append(str(csv_path.resolve()))
+            continue
+        loaded_csv_count += 1
+        contracts = set(df.get("sequence_contract_version", pd.Series(dtype=str)).dropna().astype(str))
+        if contracts and contracts != {sequence_contract_version}:
+            raise ValueError(f"sequence contract mismatch: {csv_path}: {sorted(contracts)}")
+        windows, targets, metadata, names = windows_from_video(
+            df, window_rows, stride_rows,
+            min_interval_sec=min_interval_sec,
+            max_interval_sec=max_interval_sec,
+        )
         if feature_names != names:
             raise ValueError(f"feature order mismatch: {csv_path}")
         split = str(df["split"].iloc[0])
@@ -149,12 +169,17 @@ def main() -> int:
     summary = {
         "window_schema_version": WINDOW_SCHEMA_VERSION,
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
-        "sequence_contract_version": "observed_only_10hz_v2",
+        "sequence_contract_version": sequence_contract_version,
         "source_dir": str(args.features_dir.resolve()),
         "csv_count": len(csv_files),
+        "loaded_csv_count": loaded_csv_count,
+        "empty_csv_count": len(empty_csv_files),
+        "empty_csv_files": empty_csv_files,
         "window_sec": args.window_sec,
         "stride_sec": args.stride_sec,
         "sample_hz": args.sample_hz,
+        "min_interval_sec": min_interval_sec,
+        "max_interval_sec": max_interval_sec,
         "window_rows": window_rows,
         "stride_rows": stride_rows,
         "feature_count": len(feature_names),

@@ -1,0 +1,232 @@
+{
+  "rows": 78,
+  "changed_rows": 45,
+  "completed_rows_preserved": 6,
+  "changes": [
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0103",
+      "previous_frame_count": 268,
+      "decoded_frame_count": 260
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0105",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0106",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0108",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0109",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0110",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0112",
+      "previous_frame_count": 224,
+      "decoded_frame_count": 220
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0202",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0203",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0205",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0206",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0207",
+      "previous_frame_count": 228,
+      "decoded_frame_count": 220
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0208",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0209",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c1_sim_c1_sim0211",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0103",
+      "previous_frame_count": 268,
+      "decoded_frame_count": 260
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0105",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0106",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0108",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0109",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0110",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0112",
+      "previous_frame_count": 224,
+      "decoded_frame_count": 220
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0202",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0203",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0205",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0206",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0207",
+      "previous_frame_count": 228,
+      "decoded_frame_count": 220
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0208",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0209",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c2_sim_c2_sim0211",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0103",
+      "previous_frame_count": 268,
+      "decoded_frame_count": 260
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0105",
+      "previous_frame_count": 264,
+      "decoded_frame_count": 260
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0106",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0108",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0109",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0110",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0112",
+      "previous_frame_count": 224,
+      "decoded_frame_count": 220
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0202",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0203",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0205",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0206",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0207",
+      "previous_frame_count": 228,
+      "decoded_frame_count": 220
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0208",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0209",
+      "previous_frame_count": 244,
+      "decoded_frame_count": 240
+    },
+    {
+      "video_id": "usb_sim_falldown_c3_sim_c3_sim0211",
+      "previous_frame_count": 248,
+      "decoded_frame_count": 240
+    }
+  ]
+}

@@ -16,7 +16,7 @@ import pandas as pd
 
 from person_tracker import MultiPersonTracker, PersonDetection, keypoints_bbox
 from temporal_features import FEATURE_SCHEMA_VERSION, labels_at, normalize_pose
-from temporal_sequence import decide_observation
+from temporal_sequence import cadence_interval_bounds, decide_observation, observed_sequence_contract
 
 DEFAULT_CLASSES = [
     "front_lying",
@@ -26,7 +26,6 @@ DEFAULT_CLASSES = [
     "sitting_center",
     "sitting_edge",
 ]
-SEQUENCE_CONTRACT_VERSION = "observed_only_10hz_v2"
 
 
 def file_sha256(path: Path) -> str:
@@ -77,7 +76,7 @@ def detections_from_result(result) -> list[PersonDetection]:
     return detections
 
 
-def row_from_pose(item: dict, frame_idx: int, timestamp_sec: float, xy: np.ndarray, conf: np.ndarray, pose_probs: np.ndarray, *, track_id: int, sequence_id: int, timestamp_source: str, reset_reason: str) -> dict:
+def row_from_pose(item: dict, frame_idx: int, timestamp_sec: float, xy: np.ndarray, conf: np.ndarray, pose_probs: np.ndarray, *, track_id: int, sequence_id: int, timestamp_source: str, reset_reason: str, sequence_contract_version: str) -> dict:
     normalized = normalize_pose(xy, conf)
     target, active = labels_at(timestamp_sec, item.get("intervals", []))
     visible = normalized["visibility"]
@@ -102,7 +101,7 @@ def row_from_pose(item: dict, frame_idx: int, timestamp_sec: float, xy: np.ndarr
         "pose_center_y": float(normalized["center"][1]),
         "pose_scale": float(normalized["scale"]),
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
-        "sequence_contract_version": SEQUENCE_CONTRACT_VERSION,
+        "sequence_contract_version": sequence_contract_version,
     }
     xy_norm = normalized["xy_norm"]
     for index in range(17):
@@ -183,7 +182,7 @@ def process_video(item: dict, pose_model, classifier, class_names: list[str], ar
         pred = classifier.predict(primary.keypoints_xy.reshape(1, 34).astype(np.float32), verbose=0)[0]
         if len(pred) != len(class_names):
             raise ValueError(f"classifier output must have {len(class_names)} values, got {len(pred)}")
-        row = row_from_pose(item, frame_idx, timestamp_sec, primary.keypoints_xy, primary.keypoints_conf, np.asarray(pred, dtype=np.float32), track_id=primary.track_id, sequence_id=sequence_id, timestamp_source=timestamp_source, reset_reason=reset_reason)
+        row = row_from_pose(item, frame_idx, timestamp_sec, primary.keypoints_xy, primary.keypoints_conf, np.asarray(pred, dtype=np.float32), track_id=primary.track_id, sequence_id=sequence_id, timestamp_source=timestamp_source, reset_reason=reset_reason, sequence_contract_version=args.sequence_contract_version)
         row["sample_hz"] = args.sample_hz
         rows.append(row)
         last_observation_ts = timestamp_sec
@@ -211,8 +210,8 @@ def main() -> int:
     parser.add_argument("--weights", type=Path, default=project_root / "yolo11m-pose.pt")
     parser.add_argument("--classifier", type=Path, default=project_root / "my_model_six_check.keras")
     parser.add_argument("--sample-hz", type=float, default=10.0)
-    parser.add_argument("--min-interval-sec", type=float, default=0.070)
-    parser.add_argument("--max-interval-sec", type=float, default=0.150)
+    parser.add_argument("--min-interval-sec", type=float)
+    parser.add_argument("--max-interval-sec", type=float)
     parser.add_argument("--frame-width", type=int, default=640)
     parser.add_argument("--device", default="0")
     parser.add_argument("--video-id")
@@ -221,6 +220,10 @@ def main() -> int:
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
+    default_min, default_max = cadence_interval_bounds(args.sample_hz)
+    args.min_interval_sec = default_min if args.min_interval_sec is None else args.min_interval_sec
+    args.max_interval_sec = default_max if args.max_interval_sec is None else args.max_interval_sec
+    args.sequence_contract_version = observed_sequence_contract(args.sample_hz)
     if not 0.0 < args.min_interval_sec <= args.max_interval_sec:
         raise ValueError("sampling interval must satisfy 0 < min <= max")
 
@@ -253,7 +256,7 @@ def main() -> int:
     results = [process_video(item, pose_model, classifier, DEFAULT_CLASSES, args, out_dir) for item in items]
     index = {
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
-        "sequence_contract_version": SEQUENCE_CONTRACT_VERSION,
+        "sequence_contract_version": args.sequence_contract_version,
         "manifest": str(args.manifest.resolve()),
         "sample_hz": args.sample_hz,
         "min_interval_sec": args.min_interval_sec,

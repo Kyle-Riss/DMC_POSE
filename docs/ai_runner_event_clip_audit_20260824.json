@@ -1,0 +1,257 @@
+{
+  "schema_version": "dmc_legacy_event_clip_audit_v1",
+  "source_root": "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger",
+  "target_hz": 20.0,
+  "sequence_contract_version": "observed_only_20hz_v1",
+  "event_count": 6,
+  "ground_truth_counts": {
+    "normal_exit": 3,
+    "simulated_fall": 3
+  },
+  "training_eligible_count": 0,
+  "cadence_eligible_count": 0,
+  "integrity_error_count": 0,
+  "decision": "fusion/replay evidence only; never upsample into the 20 Hz production GRU corpus",
+  "events": [
+    {
+      "event_id": "bed_001-1786664308253-2176-1",
+      "event_dir": "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/normal_exit_20260814_session_001/bed_001-1786664308253-2176-1",
+      "camera_id": "bed_001",
+      "ground_truth": "normal_exit",
+      "trigger_reason": "bed_joint_absence_confirmed",
+      "row_count": 78,
+      "span_sec": 8.151487,
+      "effective_hz": 9.44613,
+      "interval_sec": {
+        "minimum": 0.044916,
+        "median": 0.100081,
+        "maximum": 0.25258
+      },
+      "phase_counts": {
+        "pre": 50,
+        "post": 28
+      },
+      "target_hz": 20.0,
+      "sequence_contract_version": "observed_only_20hz_v1",
+      "cadence_bounds_sec": [
+        0.034999999999999996,
+        0.07500000000000001
+      ],
+      "cadence_eligible": false,
+      "missing_image_count": 0,
+      "hash_mismatch_count": 0,
+      "production_gru_training_eligible": false,
+      "training_blockers": [
+        "does_not_satisfy_observed_only_20hz_cadence",
+        "fewer_than_80_observations",
+        "subject_identity_unknown",
+        "session_split_identity_unknown"
+      ],
+      "allowed_uses": [
+        "fusion_replay",
+        "runtime_regression",
+        "visual_failure_review"
+      ]
+    },
+    {
+      "event_id": "bed_001-1786664345394-2919-2",
+      "event_dir": "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/normal_exit_20260814_session_001/bed_001-1786664345394-2919-2",
+      "camera_id": "bed_001",
+      "ground_truth": "normal_exit",
+      "trigger_reason": "bed_joint_absence_confirmed",
+      "row_count": 77,
+      "span_sec": 8.050928,
+      "effective_hz": 9.439906,
+      "interval_sec": {
+        "minimum": 0.046312,
+        "median": 0.100151,
+        "maximum": 0.157477
+      },
+      "phase_counts": {
+        "pre": 50,
+        "post": 27
+      },
+      "target_hz": 20.0,
+      "sequence_contract_version": "observed_only_20hz_v1",
+      "cadence_bounds_sec": [
+        0.034999999999999996,
+        0.07500000000000001
+      ],
+      "cadence_eligible": false,
+      "missing_image_count": 0,
+      "hash_mismatch_count": 0,
+      "production_gru_training_eligible": false,
+      "training_blockers": [
+        "does_not_satisfy_observed_only_20hz_cadence",
+        "fewer_than_80_observations",
+        "subject_identity_unknown",
+        "session_split_identity_unknown"
+      ],
+      "allowed_uses": [
+        "fusion_replay",
+        "runtime_regression",
+        "visual_failure_review"
+      ]
+    },
+    {
+      "event_id": "bed_001-1786664385851-3728-3",
+      "event_dir": "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/normal_exit_20260814_session_001/bed_001-1786664385851-3728-3",
+      "camera_id": "bed_001",
+      "ground_truth": "normal_exit",
+      "trigger_reason": "bed_joint_absence_confirmed",
+      "row_count": 76,
+      "span_sec": 8.196437,
+      "effective_hz": 9.150318,
+      "interval_sec": {
+        "minimum": 0.046621,
+        "median": 0.100402,
+        "maximum": 0.250199
+      },
+      "phase_counts": {
+        "pre": 50,
+        "post": 26
+      },
+      "target_hz": 20.0,
+      "sequence_contract_version": "observed_only_20hz_v1",
+      "cadence_bounds_sec": [
+        0.034999999999999996,
+        0.07500000000000001
+      ],
+      "cadence_eligible": false,
+      "missing_image_count": 0,
+      "hash_mismatch_count": 0,
+      "production_gru_training_eligible": false,
+      "training_blockers": [
+        "does_not_satisfy_observed_only_20hz_cadence",
+        "fewer_than_80_observations",
+        "subject_identity_unknown",
+        "session_split_identity_unknown"
+      ],
+      "allowed_uses": [
+        "fusion_replay",
+        "runtime_regression",
+        "visual_failure_review"
+      ]
+    },
+    {
+      "event_id": "bed_001-1786666360956-3409-1",
+      "event_dir": "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/simulated_fall_20260814_pilot_001/bed_001-1786666360956-3409-1",
+      "camera_id": "bed_001",
+      "ground_truth": "simulated_fall",
+      "trigger_reason": "bed_joint_absence_confirmed",
+      "row_count": 104,
+      "span_sec": 11.241469,
+      "effective_hz": 9.162504,
+      "interval_sec": {
+        "minimum": 0.046393,
+        "median": 0.100231,
+        "maximum": 0.158966
+      },
+      "phase_counts": {
+        "pre": 50,
+        "post": 54
+      },
+      "target_hz": 20.0,
+      "sequence_contract_version": "observed_only_20hz_v1",
+      "cadence_bounds_sec": [
+        0.034999999999999996,
+        0.07500000000000001
+      ],
+      "cadence_eligible": false,
+      "missing_image_count": 0,
+      "hash_mismatch_count": 0,
+      "production_gru_training_eligible": false,
+      "training_blockers": [
+        "does_not_satisfy_observed_only_20hz_cadence",
+        "fall_onset_impact_stable_boundaries_missing",
+        "subject_identity_unknown",
+        "session_split_identity_unknown"
+      ],
+      "allowed_uses": [
+        "fusion_replay",
+        "runtime_regression",
+        "visual_failure_review"
+      ]
+    },
+    {
+      "event_id": "bed_001-1786666392011-4031-2",
+      "event_dir": "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/simulated_fall_20260814_pilot_001/bed_001-1786666392011-4031-2",
+      "camera_id": "bed_001",
+      "ground_truth": "simulated_fall",
+      "trigger_reason": "bed_joint_absence_confirmed",
+      "row_count": 101,
+      "span_sec": 11.091587,
+      "effective_hz": 9.015842,
+      "interval_sec": {
+        "minimum": 0.04774,
+        "median": 0.10015,
+        "maximum": 0.205868
+      },
+      "phase_counts": {
+        "pre": 50,
+        "post": 51
+      },
+      "target_hz": 20.0,
+      "sequence_contract_version": "observed_only_20hz_v1",
+      "cadence_bounds_sec": [
+        0.034999999999999996,
+        0.07500000000000001
+      ],
+      "cadence_eligible": false,
+      "missing_image_count": 0,
+      "hash_mismatch_count": 0,
+      "production_gru_training_eligible": false,
+      "training_blockers": [
+        "does_not_satisfy_observed_only_20hz_cadence",
+        "fall_onset_impact_stable_boundaries_missing",
+        "subject_identity_unknown",
+        "session_split_identity_unknown"
+      ],
+      "allowed_uses": [
+        "fusion_replay",
+        "runtime_regression",
+        "visual_failure_review"
+      ]
+    },
+    {
+      "event_id": "bed_001-1786666420558-4602-3",
+      "event_dir": "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/simulated_fall_20260814_pilot_001/bed_001-1786666420558-4602-3",
+      "camera_id": "bed_001",
+      "ground_truth": "simulated_fall",
+      "trigger_reason": "bed_joint_absence_confirmed",
+      "row_count": 99,
+      "span_sec": 11.000041,
+      "effective_hz": 8.909058,
+      "interval_sec": {
+        "minimum": 0.044883,
+        "median": 0.100477,
+        "maximum": 0.203884
+      },
+      "phase_counts": {
+        "pre": 50,
+        "post": 49
+      },
+      "target_hz": 20.0,
+      "sequence_contract_version": "observed_only_20hz_v1",
+      "cadence_bounds_sec": [
+        0.034999999999999996,
+        0.07500000000000001
+      ],
+      "cadence_eligible": false,
+      "missing_image_count": 0,
+      "hash_mismatch_count": 0,
+      "production_gru_training_eligible": false,
+      "training_blockers": [
+        "does_not_satisfy_observed_only_20hz_cadence",
+        "fall_onset_impact_stable_boundaries_missing",
+        "subject_identity_unknown",
+        "session_split_identity_unknown"
+      ],
+      "allowed_uses": [
+        "fusion_replay",
+        "runtime_regression",
+        "visual_failure_review"
+      ]
+    }
+  ]
+}

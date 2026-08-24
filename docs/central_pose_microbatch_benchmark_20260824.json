@@ -1,0 +1,85 @@
+{
+  "benchmark": "ultralytics_pose_microbatch_wall_v1",
+  "scope": "decode excluded; preprocessing, GPU inference, and Ultralytics postprocessing included",
+  "device": "NVIDIA GeForce RTX 5080",
+  "weights": "/home/dmc/AI/DMC_POSE_source/yolo11m-pose.pt",
+  "images": [
+    "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/normal_exit_20260814_session_001/bed_001-1786664308253-2176-1/frames/0000_pre_frame_2075.jpg",
+    "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/normal_exit_20260814_session_001/bed_001-1786664345394-2919-2/frames/0002_pre_frame_2825.jpg",
+    "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/normal_exit_20260814_session_001/bed_001-1786664385851-3728-3/frames/0005_pre_frame_3637.jpg",
+    "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/simulated_fall_20260814_pilot_001/bed_001-1786666360956-3409-1/frames/0009_pre_frame_3327.jpg",
+    "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/simulated_fall_20260814_pilot_001/bed_001-1786666360956-3409-1/frames/0089_post_frame_3501.jpg",
+    "/home/dmc/AI/AI_runner/data/research/fall_v4e_post_trigger/simulated_fall_20260814_pilot_001/bed_001-1786666392011-4031-2/frames/0065_post_frame_4068.jpg"
+  ],
+  "image_shapes": [
+    [
+      360,
+      640,
+      3
+    ],
+    [
+      360,
+      640,
+      3
+    ],
+    [
+      360,
+      640,
+      3
+    ],
+    [
+      360,
+      640,
+      3
+    ],
+    [
+      360,
+      640,
+      3
+    ],
+    [
+      360,
+      640,
+      3
+    ]
+  ],
+  "imgsz": 640,
+  "results": [
+    {
+      "batch_size": 1,
+      "iterations": 50,
+      "p50_batch_ms": 3.651,
+      "p95_batch_ms": 5.578,
+      "mean_batch_ms": 4.036,
+      "mean_frames_per_sec": 247.741,
+      "last_batch_person_detections": 1
+    },
+    {
+      "batch_size": 2,
+      "iterations": 50,
+      "p50_batch_ms": 5.429,
+      "p95_batch_ms": 9.141,
+      "mean_batch_ms": 6.407,
+      "mean_frames_per_sec": 312.144,
+      "last_batch_person_detections": 2
+    },
+    {
+      "batch_size": 3,
+      "iterations": 50,
+      "p50_batch_ms": 8.519,
+      "p95_batch_ms": 11.628,
+      "mean_batch_ms": 9.219,
+      "mean_frames_per_sec": 325.409,
+      "last_batch_person_detections": 3
+    },
+    {
+      "batch_size": 6,
+      "iterations": 50,
+      "p50_batch_ms": 16.912,
+      "p95_batch_ms": 21.202,
+      "mean_batch_ms": 17.052,
+      "mean_frames_per_sec": 351.86,
+      "last_batch_person_detections": 6
+    }
+  ]
+}

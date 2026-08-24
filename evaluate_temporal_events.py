@@ -12,7 +12,7 @@ import numpy as np
 import torch
 from scipy.stats import chi2
 
-from temporal_model import FallTCN
+from temporal_model import architecture_from_checkpoint, build_temporal_model
 from train_tcn import probabilities
 
 
@@ -142,7 +142,7 @@ def predict_split(windows_dir: Path, split: str, checkpoint_path: Path, device: 
     metadata = json.loads((windows_dir / f"{split}_metadata.json").read_text(encoding="utf-8"))
     checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     x = (x - checkpoint["mean"]) / checkpoint["std"]
-    model = FallTCN(int(checkpoint["feature_count"])).to(device)
+    model = build_temporal_model(architecture_from_checkpoint(checkpoint), int(checkpoint["feature_count"])).to(device)
     model.load_state_dict(checkpoint["state_dict"])
     probability = probabilities(model, x, device)
     return metadata, probability

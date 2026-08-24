@@ -292,6 +292,11 @@ def main() -> None:
     parser.add_argument("--pose-model", type=Path, default=project / "yolo11m-pose.pt")
     parser.add_argument("--device", default="0")
     parser.add_argument("--skip-pose", action="store_true")
+    parser.add_argument(
+        "--uncalibrated-review-only",
+        action="store_true",
+        help="use fixed heuristic parameters when no completed labels exist; proposals remain review-only",
+    )
     parser.add_argument("--provided-only", action="store_true")
     parser.add_argument(
         "--inventory",
@@ -347,9 +352,13 @@ def main() -> None:
     usable_calibration = [row for row in calibration_rows if row["video_id"] in curves]
     if not usable_targets:
         raise SystemExit("no usable videos")
-    if not usable_calibration:
+    if not usable_calibration and not args.uncalibrated_review_only:
         raise SystemExit("no complete calibration annotations")
-    selected = select_params(usable_calibration, curves)
+    selected = (
+        select_params(usable_calibration, curves)
+        if usable_calibration
+        else Params(0.06, 0.18, 0.06, 0.12, 0.30, 0.0 if args.skip_pose else 0.5)
+    )
     proposals = []
     for row in usable_targets:
         method = "provided_keypoints_v1" if args.provided_only else "frame_motion_pose_v2"
@@ -369,10 +378,12 @@ def main() -> None:
         "source_annotations": str(args.annotations.resolve()), "output": str(args.output.resolve()),
         "video_count": len(usable_targets), "calibration_video_count": len(usable_calibration),
         "calibration_annotations": str(calibration_path.resolve()),
+        "uncalibrated_review_only": not bool(usable_calibration),
         "failures": failures, "selected_parameters": asdict(selected),
         "in_sample_metrics": summarize(usable_targets, proposals),
         "leave_one_video_out_metrics": summarize(usable_calibration, loo_proposals) if loo_proposals else None,
-        "limitations": ["24-video pilot is too small for a generalization claim",
+        "limitations": ["uncalibrated proposals are navigation aids, not temporal labels",
+                        "24-video pilot is too small for a generalization claim",
                         "global frame motion can react to helpers, bedding, or camera motion",
                         "all proposals require human review"],
     }

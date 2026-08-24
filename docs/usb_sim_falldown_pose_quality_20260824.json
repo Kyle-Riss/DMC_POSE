@@ -1,0 +1,73 @@
+{
+  "report": "observed_pose_extraction_quality_v1",
+  "accuracy_claim": false,
+  "feature_schema_version": "pose_temporal_109_v1",
+  "sequence_contract_version": "observed_only_20hz_v1",
+  "sample_hz": 20.0,
+  "video_count": 78,
+  "successful_videos": 78,
+  "csv_count": 78,
+  "source_duration_sec": 947.8,
+  "elapsed_sec": 522.28,
+  "offline_realtime_factor": 1.815,
+  "mean_visible_joints_per_observation": 15.2802,
+  "totals": {
+    "decoded_frames": 18680,
+    "pose_probes": 18680,
+    "rows": 17187,
+    "no_primary": 1493,
+    "duplicate_skip": 0,
+    "non_monotonic_skip": 0,
+    "gap_reset": 254,
+    "track_reset": 8,
+    "pose_observation_coverage": 0.920075,
+    "no_primary_rate": 0.079925,
+    "gap_resets_per_1000_probes": 13.597
+  },
+  "by_camera": {
+    "c1_sim": {
+      "decoded_frames": 6220,
+      "pose_probes": 6220,
+      "rows": 5760,
+      "no_primary": 460,
+      "duplicate_skip": 0,
+      "non_monotonic_skip": 0,
+      "gap_reset": 89,
+      "track_reset": 3,
+      "pose_observation_coverage": 0.926045,
+      "no_primary_rate": 0.073955,
+      "gap_resets_per_1000_probes": 14.309
+    },
+    "c2_sim": {
+      "decoded_frames": 6220,
+      "pose_probes": 6220,
+      "rows": 5588,
+      "no_primary": 632,
+      "duplicate_skip": 0,
+      "non_monotonic_skip": 0,
+      "gap_reset": 97,
+      "track_reset": 4,
+      "pose_observation_coverage": 0.898392,
+      "no_primary_rate": 0.101608,
+      "gap_resets_per_1000_probes": 15.595
+    },
+    "c3_sim": {
+      "decoded_frames": 6240,
+      "pose_probes": 6240,
+      "rows": 5839,
+      "no_primary": 401,
+      "duplicate_skip": 0,
+      "non_monotonic_skip": 0,
+      "gap_reset": 68,
+      "track_reset": 1,
+      "pose_observation_coverage": 0.935737,
+      "no_primary_rate": 0.064263,
+      "gap_resets_per_1000_probes": 10.897
+    }
+  },
+  "limitations": [
+    "video-level fall labels have no onset/end intervals",
+    "dataset contains no matched normal-ADL control set",
+    "metrics describe Pose observation quality and compute throughput, not fall accuracy"
+  ]
+}

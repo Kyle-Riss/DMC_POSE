@@ -1,0 +1,69 @@
+{
+  "contract_version": "dmc_pose_central_inference_v1",
+  "authority": "shadow_only",
+  "camera": {
+    "transport": "rtsp_h264_tcp",
+    "connections_per_camera": 1,
+    "decoders_per_camera": 1,
+    "source_fps": 20.0,
+    "source_resolution": [640, 360],
+    "central_pose_policy": "native_cadence_latest_only",
+    "central_pose_target_hz": 20.0,
+    "stale_frame_policy": "drop",
+    "synthetic_frame_policy": "forbidden"
+  },
+  "ownership": {
+    "model_weights": "one_shared_instance_per_model",
+    "temporal_state_key": ["camera_id", "track_id"],
+    "decoded_frame_owner": "central_camera_hub",
+    "rtsp_reopen_by_consumers": "forbidden"
+  },
+  "temporal_routes": {
+    "dmc_tcn_v1": {
+      "status": "legacy_shadow_baseline",
+      "input": "30x109",
+      "target_hz": 10.0,
+      "window_seconds": 3.0,
+      "resampling": "observed_only_timestamp_gate"
+    },
+    "wardy_m04": {
+      "status": "offline_baseline_only",
+      "input": "20x80",
+      "target_hz": 10.0,
+      "window_seconds": 2.0,
+      "resampling": "dedicated_verified_feature_adapter_required"
+    },
+    "fallvision_lstm": {
+      "status": "quarantined",
+      "input": "60x24",
+      "target_hz": null,
+      "window_seconds": null,
+      "reason": "shipped weights, training source, inference default, and README disagree"
+    },
+    "dmc_pose_gru_v1": {
+      "status": "single_production_candidate_shadow_only",
+      "architecture": "gru_v1",
+      "input": "80x109",
+      "target_hz": 20.0,
+      "window_seconds": 4.0,
+      "inference_stride_rows": 1,
+      "feature_schema_version": "pose_temporal_109_v1",
+      "sequence_contract_version": "observed_only_20hz_v1",
+      "missing_observation_policy": "reset_without_synthetic_rows",
+      "missing_joint_policy": "zero_value_with_visibility_mask",
+      "threshold": "validation_selected_not_yet_available",
+      "persistence": "validation_selected_not_yet_available"
+    }
+  },
+  "verify": {
+    "trigger": "candidate_only",
+    "rolling_evidence_seconds": 10.0,
+    "first_pass_window": [-4.0, 0.0],
+    "progressive_updates_seconds": [0.5, 1.0],
+    "external_event": "SHADOW_ALERT"
+  },
+  "pi_target_role": ["camera_capture", "h264_encode", "rtsp_publish"],
+  "pi_ai_after_cutover": "disabled",
+  "management_surface": "deployment_specific_private_runtime",
+  "development_source": "this_repository"
+}

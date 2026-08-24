@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from live_temporal import TemporalShadowRunner
-from temporal_sequence import decide_observation
+from temporal_sequence import cadence_interval_bounds, decide_observation, observed_sequence_contract
 
 
 class FakeService:
@@ -17,6 +17,11 @@ class FakeService:
         return 0.6
 
 
+class Fake20HzService(FakeService):
+    sample_hz = 20.0
+    window_rows = 80
+
+
 def pose():
     xy = np.arange(34, dtype=np.float32).reshape(17, 2) + 10.0
     conf = np.ones(17, dtype=np.float32)
@@ -25,6 +30,12 @@ def pose():
 
 
 class TemporalResamplingTest(unittest.TestCase):
+    def test_20hz_contract_and_bounds_are_explicit(self):
+        self.assertEqual(observed_sequence_contract(20.0), "observed_only_20hz_v1")
+        minimum, maximum = cadence_interval_bounds(20.0)
+        self.assertAlmostEqual(minimum, 0.035)
+        self.assertAlmostEqual(maximum, 0.075)
+
     def test_shared_cadence_decision_boundaries(self):
         self.assertEqual(decide_observation(1.0, None).action, "append")
         self.assertEqual(decide_observation(1.04, 1.0).action, "duplicate_skip")
@@ -103,6 +114,22 @@ class TemporalResamplingTest(unittest.TestCase):
         self.assertEqual(status["timestamp_source"], "decode_mono_ts")
         self.assertEqual(service.windows[-1].shape, (30, 109))
         self.assertEqual(status["missing_samples_window"], 0)
+
+    def test_20hz_model_contract_drives_80_row_runner(self):
+        service = Fake20HzService()
+        runner = TemporalShadowRunner(service, inference_stride=1)
+        xy, conf, probs = pose()
+        for index in range(80):
+            status = runner.push(index * 0.05, xy, conf, probs)
+
+        self.assertTrue(status["ready"])
+        self.assertEqual(status["sample_hz"], 20.0)
+        self.assertEqual(status["window_rows"], 80)
+        self.assertEqual(service.windows[-1].shape, (80, 109))
+
+    def test_runner_rejects_checkpoint_cadence_override(self):
+        with self.assertRaisesRegex(ValueError, "sample_hz"):
+            TemporalShadowRunner(Fake20HzService(), sample_hz=10.0)
 
     def test_non_monotonic_timestamp_is_skipped(self):
         runner = TemporalShadowRunner(FakeService())

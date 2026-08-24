@@ -1,5 +1,6 @@
 # Python bytecode and tooling caches
 __pycache__/
+build/
 *.py[cod]
 *$py.class
 .pytest_cache/
@@ -40,6 +41,10 @@ config/cameras.yaml
 mo_saved_model/
 weights/*
 !weights/.gitkeep
+
+# Third-party repositories and weights stay local and unmodified.
+external_models/*
+!external_models/README.md
 
 # Training datasets and generated manifests
 *.csv

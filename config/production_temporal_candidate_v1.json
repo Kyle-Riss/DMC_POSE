@@ -1,0 +1,49 @@
+{
+  "contract_version": "dmc_pose_production_temporal_candidate_v1",
+  "authority": "shadow_only",
+  "architecture": {
+    "name": "gru_v1",
+    "direction": "causal_unidirectional",
+    "layers": 2,
+    "hidden_size": 128,
+    "dropout": 0.2,
+    "output": "single_fall_logit"
+  },
+  "input": {
+    "feature_schema_version": "pose_temporal_109_v1",
+    "sequence_contract_version": "observed_only_20hz_v1",
+    "shape": [80, 109],
+    "sample_hz": 20.0,
+    "window_seconds": 4.0,
+    "inference_stride_rows": 1,
+    "normalization": "train_split_mean_std_from_checkpoint",
+    "missing_observation": "reset_without_synthetic_rows",
+    "missing_joint": "zero_value_with_explicit_visibility_mask",
+    "state_key": ["camera_id", "track_id"]
+  },
+  "training": {
+    "initialization": "random_unless_exact_contract_checkpoint_exists",
+    "required_sources": [
+      "temporally_annotated_public_fall_data",
+      "hospital_staged_falls",
+      "hospital_hard_negatives"
+    ],
+    "split_boundary": ["person", "recording_session", "camera"],
+    "threshold_source": "validation_only",
+    "test_policy": "frozen_once_before_promotion"
+  },
+  "promotion": {
+    "current_status": "reviewed_shadow_checkpoint_built_promotion_blocked_on_identity_and_performance",
+    "required_metrics": [
+      "event_sensitivity",
+      "false_alerts_per_valid_bed_hour",
+      "normal_bed_exit_false_positive",
+      "bed_exit_fall_recall",
+      "slow_slide_recall",
+      "detection_latency_p50_p95",
+      "primary_track_failure_rate",
+      "temporal_ready_coverage"
+    ],
+    "external_output_before_approval": "SHADOW_ALERT"
+  }
+}

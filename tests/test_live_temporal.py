@@ -1,12 +1,16 @@
 import unittest
+import json
 from pathlib import Path
+import tempfile
 
 import numpy as np
 import pandas as pd
+import torch
 
 from build_temporal_windows import feature_matrix
 from live_temporal import TemporalModelService, TemporalShadowRunner
 from temporal_features import normalize_pose, temporal_feature_vector
+from temporal_model import build_temporal_model
 
 
 class FakeService:
@@ -43,6 +47,35 @@ def offline_row(xy, conf, probs, timestamp):
 
 
 class LiveTemporalTest(unittest.TestCase):
+    def test_shadow_candidate_requires_explicit_opt_in(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = build_temporal_model("gru_v1", 109)
+            checkpoint = {
+                "state_dict": model.state_dict(), "feature_count": 109,
+                "architecture": "gru_v1", "window_rows": 80,
+                "sample_hz": 20.0,
+                "sequence_contract_version": "observed_only_20hz_v1",
+                "mean": np.zeros((1, 1, 109), dtype=np.float32),
+                "std": np.ones((1, 1, 109), dtype=np.float32),
+                "run_purpose": "shadow_candidate", "promotion_eligible": False,
+            }
+            torch.save(checkpoint, root / "model.pt")
+            report = {
+                "model": "gru_v1", "window_rows": 80, "sample_hz": 20.0,
+                "sequence_contract_version": "observed_only_20hz_v1",
+                "promotion_eligible": False, "validation": {"threshold": 0.5},
+            }
+            (root / "report.json").write_text(json.dumps(report), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "explicit allow_non_promotion"):
+                TemporalModelService(root / "model.pt", root / "report.json")
+            service = TemporalModelService(
+                root / "model.pt", root / "report.json",
+                allow_non_promotion=True,
+            )
+            self.assertEqual(service.window_rows, 80)
+            self.assertEqual(service.sample_hz, 20.0)
+
     def test_live_vector_matches_offline_feature_builder(self):
         probs0 = np.linspace(0.0, 0.5, 6, dtype=np.float32)
         probs1 = probs0[::-1].copy()

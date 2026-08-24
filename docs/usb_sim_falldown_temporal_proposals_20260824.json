@@ -1,0 +1,56 @@
+{
+  "schema_version": "fallvision_temporal_proposals_v1",
+  "purpose": "review-only proposals; never ground truth",
+  "source_annotations": "/home/dmc/AI/DMC_POSE_source/external_datasets/annotations/usb_sim_falldown_temporal_v1.csv",
+  "output": "/home/dmc/AI/DMC_POSE_source/external_datasets/annotations/usb_sim_falldown_temporal_v1_proposals.csv",
+  "video_count": 78,
+  "calibration_video_count": 0,
+  "calibration_annotations": "/home/dmc/AI/DMC_POSE_source/external_datasets/annotations/usb_sim_falldown_temporal_v1.csv",
+  "uncalibrated_review_only": true,
+  "failures": [],
+  "selected_parameters": {
+    "smooth_seconds": 0.06,
+    "onset_peak_ratio": 0.18,
+    "onset_sustain_seconds": 0.06,
+    "stable_peak_ratio": 0.12,
+    "stable_sustain_seconds": 0.3,
+    "pose_weight": 0.0
+  },
+  "in_sample_metrics": {
+    "fall_onset_frame": {
+      "count": 0,
+      "mae_frames": null,
+      "median_frames": null,
+      "mae_seconds": null,
+      "median_seconds": null
+    },
+    "impact_frame": {
+      "count": 0,
+      "mae_frames": null,
+      "median_frames": null,
+      "mae_seconds": null,
+      "median_seconds": null
+    },
+    "post_fall_stable_frame": {
+      "count": 0,
+      "mae_frames": null,
+      "median_frames": null,
+      "mae_seconds": null,
+      "median_seconds": null
+    },
+    "fall_end_frame": {
+      "count": 0,
+      "mae_frames": null,
+      "median_frames": null,
+      "mae_seconds": null,
+      "median_seconds": null
+    }
+  },
+  "leave_one_video_out_metrics": null,
+  "limitations": [
+    "uncalibrated proposals are navigation aids, not temporal labels",
+    "24-video pilot is too small for a generalization claim",
+    "global frame motion can react to helpers, bedding, or camera motion",
+    "all proposals require human review"
+  ]
+}

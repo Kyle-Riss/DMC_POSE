@@ -53,7 +53,6 @@ from temporal_session_recorder import (
 )
 from pose_candidate_filter import accept_pose_candidate, select_tracking_bbox
 from async_replay_worker import AsyncReplayWorker
-from locked_predictor import LockedPredictor
 from runtime_health import evaluate_fleet, render_prometheus
 from inference_scheduler import (
     LatestInferenceScheduler,
@@ -155,6 +154,13 @@ TCN_REPORT_PATH = Path(os.environ.get(
 ))
 TCN_DEVICE = os.environ.get('POSE_TCN_DEVICE', 'cpu')
 TCN_THRESHOLD = os.environ.get('POSE_TCN_THRESHOLD')
+TCN_ALLOW_NON_PROMOTION = os.environ.get(
+    'POSE_TCN_ALLOW_NON_PROMOTION', '0'
+) == '1'
+TCN_FUSION_ENABLED = os.environ.get('POSE_TCN_FUSION_ENABLED', '1') == '1'
+CENTRAL_POSE_ALWAYS_ON = os.environ.get(
+    'POSE_CENTRAL_ALWAYS_ON', '0'
+) == '1'
 MOTION_WATCHER_FPS = float(os.environ.get('POSE_MOTION_WATCHER_FPS', '20'))
 MOTION_SMALL_WIDTH = int(os.environ.get('POSE_MOTION_SMALL_WIDTH', '160'))
 MOTION_SMALL_HEIGHT = int(os.environ.get('POSE_MOTION_SMALL_HEIGHT', '90'))
@@ -203,9 +209,10 @@ EMPTY_POSE_PROBE_HZ = float(os.environ.get('POSE_EMPTY_PROBE_HZ', '0.75'))
 OCCUPIED_POSE_INTERVAL_SEC = float(os.environ.get(
     'POSE_OCCUPIED_POSE_INTERVAL_SEC', '0.09'
 ))
-LIVE_TCN_MAX_INTERVAL_SEC = float(os.environ.get(
-    'POSE_LIVE_TCN_MAX_INTERVAL_SEC', '0.25'
-))
+_LIVE_TCN_MAX_INTERVAL = os.environ.get('POSE_LIVE_TCN_MAX_INTERVAL_SEC')
+LIVE_TCN_MAX_INTERVAL_SEC = (
+    float(_LIVE_TCN_MAX_INTERVAL) if _LIVE_TCN_MAX_INTERVAL else None
+)
 PERSON_TRACK_TTL_SEC = float(os.environ.get('POSE_TRACK_TTL_SEC', '5.0'))
 PRIMARY_SWITCH_MARGIN = float(os.environ.get('POSE_PRIMARY_SWITCH_MARGIN', '0.25'))
 SHADOW_RECORD_ENABLED = os.environ.get('POSE_SHADOW_RECORD', '1') == '1'
@@ -255,6 +262,30 @@ def orient_analysis_frame(frame: np.ndarray) -> np.ndarray:
     if ANALYSIS_ROTATION == 270:
         return cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
     return frame
+
+class DirectLockedKerasPredictor:
+    """Serialize shared Keras inference without ``Model.predict`` overhead.
+
+    ``Model.predict`` builds a data adapter and callback loop for every call.
+    For the one-frame 34-value posture classifier that costs tens of
+    milliseconds and, because the model is shared by six camera threads,
+    prevents the 20 Hz temporal contract from ever becoming ready. The eager
+    inference call is equivalent for inference and keeps one shared owner.
+    """
+
+    def __init__(self, predictor):
+        self._predictor = predictor
+        self._lock = Lock()
+
+    def predict(self, inputs, *, verbose=0):
+        del verbose
+        with self._lock:
+            output = self._predictor(inputs, training=False)
+            return (
+                output.numpy()
+                if hasattr(output, "numpy") else np.asarray(output)
+            )
+
 
 class ParallelInferencePool:
     """Own the two YOLO weights used by the central scheduler."""
@@ -630,6 +661,8 @@ class CameraState(BaseModel):
     tcn_samples: int = 0
     tcn_prediction_count: int = 0
     tcn_sample_hz: float = 10.0
+    tcn_window_rows: int = 30
+    tcn_fusion_enabled: bool = TCN_FUSION_ENABLED
     tcn_missing_samples_window: int = 0
     tcn_missing_samples_total: int = 0
     tcn_last_sample_timestamp: float | None = None
@@ -818,9 +851,13 @@ async def lifespan(app: FastAPI):
     # Keep latency-sensitive one-frame classification independent from the
     # much larger replay batch.  Each model is serialized within its own use
     # class, so replay can never hold the live Keras lock.
-    keras_clf = LockedPredictor(keras.models.load_model(POSE_KERAS_MODEL))
+    keras_clf = DirectLockedKerasPredictor(
+        keras.models.load_model(POSE_KERAS_MODEL)
+    )
     keras_replay_clf = (
-        LockedPredictor(keras.models.load_model(POSE_KERAS_MODEL))
+        DirectLockedKerasPredictor(
+            keras.models.load_model(POSE_KERAS_MODEL)
+        )
         if PRE_EVENT_REPLAY_ENABLED else keras_clf
     )
     temporal_service = None
@@ -828,7 +865,9 @@ async def lifespan(app: FastAPI):
         try:
             threshold = float(TCN_THRESHOLD) if TCN_THRESHOLD is not None else None
             temporal_service = TemporalModelService(
-                TCN_MODEL_PATH, TCN_REPORT_PATH, device=TCN_DEVICE, threshold=threshold
+                TCN_MODEL_PATH, TCN_REPORT_PATH, device=TCN_DEVICE,
+                threshold=threshold,
+                allow_non_promotion=TCN_ALLOW_NON_PROMOTION,
             )
             logging.info(
                 f"[TCN shadow] loaded {TCN_MODEL_PATH} on {TCN_DEVICE}; "
@@ -1197,7 +1236,8 @@ def run_analysis(
             and now_mono >= next_empty_pose_probe
         )
         should_run_pose = (
-            burst_active or state_machine.should_run_pose() or idle_probe_due
+            CENTRAL_POSE_ALWAYS_ON
+            or burst_active or state_machine.should_run_pose() or idle_probe_due
         )
         # Pace each camera from capture time rather than thread-loop time.
         # Without this gate one camera can submit several frames 2-5 ms apart,
@@ -1353,7 +1393,7 @@ def run_analysis(
             else:
                 active_temporal_runner.observe_gap(packet.capture_mono_ts)
                 temporal_status = active_temporal_runner.status()
-            if temporal_status.get("candidate"):
+            if TCN_FUSION_ENABLED and temporal_status.get("candidate"):
                 verify_priority_until = max(
                     verify_priority_until, time.monotonic() + 3.0
                 )
@@ -1365,7 +1405,15 @@ def run_analysis(
                     if temporal_service is not None else 0.0
                 ),
                 "samples": 0, "prediction_count": 0,
-                "sample_hz": 10.0, "missing_samples_window": 0,
+                "sample_hz": (
+                    float(temporal_service.sample_hz)
+                    if temporal_service is not None else 10.0
+                ),
+                "window_rows": (
+                    int(temporal_service.window_rows)
+                    if temporal_service is not None else 30
+                ),
+                "missing_samples_window": 0,
                 "missing_samples_total": 0, "sample_timestamp": None,
                 "gap_reset_total": 0, "duplicate_skip_total": 0,
                 "non_monotonic_skip_total": 0, "last_dt_sec": None,
@@ -1454,6 +1502,9 @@ def run_analysis(
 
         # 7.75 Shadow hybrid fusion: temporal + kinematic + posture + bed
         # context. This is observable but cannot trigger production alerts.
+        fusion_temporal_candidate = bool(
+            TCN_FUSION_ENABLED and effective_temporal_status["candidate"]
+        )
         fusion_result = hybrid_fusion.update(FusionInput(
             timestamp=observation_ts,
             track_id=tracking.primary_track_id,
@@ -1468,7 +1519,7 @@ def run_analysis(
             tcn_ready=bool(effective_temporal_status["ready"]),
             tcn_probability=float(effective_temporal_status["probability"]),
             tcn_threshold=float(effective_temporal_status["threshold"]),
-            tcn_candidate=bool(effective_temporal_status["candidate"]),
+            tcn_candidate=fusion_temporal_candidate,
             missing_samples=int(effective_temporal_status.get("missing_samples_window", 0)),
         ))
         if fusion_result.phase.value in {
@@ -1493,7 +1544,7 @@ def run_analysis(
                 "person_observed": tracking.primary_track_id is not None,
                 "edge_wake": bool(edge_signal_status.get("wake_active", False)),
                 "local_motion": local_burst_active,
-                "tcn_candidate": bool(effective_temporal_status.get("candidate", False)),
+                "tcn_candidate": fusion_temporal_candidate,
                 "fusion_phase": fusion_result.phase.value,
                 "track_id": tracking.primary_track_id,
             }
@@ -1530,8 +1581,18 @@ def run_analysis(
 
         # BURST runs at capture speed. EMPTY remains cheap, and its sleep is
         # interruptible by the watcher below.
-        target_fps = 20 if burst_active else state_machine.get_fps_target()
-        frame_sleep = max(0, 1.0 / target_fps - infer_time / 1000.0)
+        target_fps = (
+            20 if CENTRAL_POSE_ALWAYS_ON or burst_active
+            else state_machine.get_fps_target()
+        )
+        # LatestFrameCapture already blocks until a newer source frame exists.
+        # Sleeping another source period in central always-on mode skips every
+        # second 20 Hz frame (effective 9-12 Hz). Let capture cadence own the
+        # loop clock in that mode.
+        frame_sleep = (
+            0.0 if CENTRAL_POSE_ALWAYS_ON
+            else max(0, 1.0 / target_fps - infer_time / 1000.0)
+        )
         pose_inference_fps = 0.0
         if len(pose_inference_times) > 1:
             span = pose_inference_times[-1] - pose_inference_times[0]
@@ -1566,6 +1627,8 @@ def run_analysis(
             s.tcn_samples = int(effective_temporal_status['samples'])
             s.tcn_prediction_count = int(effective_temporal_status['prediction_count'])
             s.tcn_sample_hz = float(effective_temporal_status.get('sample_hz', 10.0))
+            s.tcn_window_rows = int(effective_temporal_status.get('window_rows', 30))
+            s.tcn_fusion_enabled = TCN_FUSION_ENABLED
             s.tcn_missing_samples_window = int(effective_temporal_status.get('missing_samples_window', 0))
             s.tcn_missing_samples_total = int(effective_temporal_status.get('missing_samples_total', 0))
             s.tcn_last_sample_timestamp = effective_temporal_status.get('sample_timestamp')
@@ -2043,7 +2106,7 @@ def viewer():
                         : `ROI_NOT_READY / ${{s.bed_roi_invalid_reason || 'detecting'}} / ${{s.bed_roi_candidate_count || 0}}`;
                     document.getElementById(`bedroi-${{id}}`).textContent = roiText;
                     const tcnText = s.tcn_shadow_enabled
-                        ? `${{s.tcn_shadow_ready ? (s.tcn_fall_probability * 100).toFixed(1) + '%' : 'warming ' + s.tcn_samples + '/30'}} / source ${{s.tcn_source || 'none'}} / replay ${{s.tcn_replay_reason || '-'}} ${{s.tcn_replay_observed_frames || 0}}/${{s.tcn_replay_requested_frames || 0}} ${{(s.tcn_replay_elapsed_ms || 0).toFixed(0)}}ms / owner ${{s.tcn_track_id ?? '-'}}${{s.tcn_alert_candidate ? ' CANDIDATE' : ''}}`
+                        ? `${{s.tcn_shadow_ready ? (s.tcn_fall_probability * 100).toFixed(1) + '%' : 'warming ' + s.tcn_samples + '/' + (s.tcn_window_rows || 30)}} / ${{s.tcn_sample_hz || 0}}Hz / source ${{s.tcn_source || 'none'}} / fusion ${{s.tcn_fusion_enabled ? 'on' : 'telemetry-only'}} / replay ${{s.tcn_replay_reason || '-'}} ${{s.tcn_replay_observed_frames || 0}}/${{s.tcn_replay_requested_frames || 0}} ${{(s.tcn_replay_elapsed_ms || 0).toFixed(0)}}ms / owner ${{s.tcn_track_id ?? '-'}}${{s.tcn_alert_candidate ? ' RAW-CANDIDATE' : ''}}`
                         : 'disabled';
                     document.getElementById(`tcn-${{id}}`).textContent = tcnText;
                     const fusionEvidence = (s.fusion_evidence || []).join(',') || '-';

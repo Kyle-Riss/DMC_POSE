@@ -13,6 +13,28 @@ class CadenceDecision:
     reset: bool
 
 
+def observed_sequence_contract(target_hz: float) -> str:
+    """Return the versioned observed-only contract name for a real cadence."""
+    hz = float(target_hz)
+    if hz <= 0.0:
+        raise ValueError("target_hz must be positive")
+    if abs(hz - 10.0) < 1e-6:
+        return "observed_only_10hz_v2"
+    if abs(hz - 20.0) < 1e-6:
+        return "observed_only_20hz_v1"
+    rendered = f"{hz:g}".replace(".", "p")
+    return f"observed_only_{rendered}hz_v1"
+
+
+def cadence_interval_bounds(target_hz: float) -> tuple[float, float]:
+    """Derive observed-only duplicate/gap bounds around the target period."""
+    hz = float(target_hz)
+    if hz <= 0.0:
+        raise ValueError("target_hz must be positive")
+    period = 1.0 / hz
+    return period * 0.7, period * 1.5
+
+
 def decide_observation(timestamp: float, last_timestamp: float | None, *, min_interval_sec: float = 0.070, max_interval_sec: float = 0.150) -> CadenceDecision:
     """Classify one real pose observation without manufacturing missing rows."""
     if not 0.0 < min_interval_sec <= max_interval_sec:
