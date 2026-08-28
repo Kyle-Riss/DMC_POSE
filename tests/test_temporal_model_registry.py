@@ -30,6 +30,14 @@ def test_unknown_architecture_fails_closed():
         build_temporal_model("mystery_model", 109)
 
 
+def test_small_gru_has_lower_capacity_than_production_gru():
+    regular = build_temporal_model("gru_v1", 109)
+    small = build_temporal_model("gru_small_v1", 109)
+    regular_parameters = sum(parameter.numel() for parameter in regular.parameters())
+    small_parameters = sum(parameter.numel() for parameter in small.parameters())
+    assert small_parameters < regular_parameters / 10
+
+
 def test_transformer_is_causal_at_earlier_outputs_by_construction():
     model = build_temporal_model("temporal_transformer_v1", 109).eval()
     short = torch.randn((1, 10, 109), dtype=torch.float32)

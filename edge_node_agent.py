@@ -17,7 +17,14 @@ from threading import Event, Thread
 from edge_contract_v1 import EdgeCapabilities, EdgeHeartbeat, EdgeInferenceResult, utc_now
 from edge_motion_watcher import EdgeMotionWatcher
 from edge_outbox_v1 import AsyncOutboxWriter, EdgeOutbox, EdgeOutboxSender
-from edge_pose_shadow import EdgePoseShadow
+from edge_site_runtime import EdgeSiteRuntime
+
+
+SITE_TELEMETRY_FIELDS = {
+    "motion_ratio", "motion_active", "scene_state", "scene_change_score",
+    "roi_source", "ring_buffer_ready", "ring_buffer_segments",
+    "ring_buffer_bytes", "ring_buffer_coverage_sec",
+}
 
 
 def boot_id() -> str:
@@ -72,6 +79,7 @@ class EdgeNodeAgent:
         if len(self.api_token) < 32:
             raise ValueError("api_token or api_token_file with at least 32 characters is required")
         self.software_version = str(config.get("software_version", "edge-agent-v1"))
+        self.send_site_telemetry = bool(config.get("send_site_telemetry", False))
         self.model_bundle_version = config.get("model_bundle_version")
         self.boot_id = boot_id()
         self.state = {
@@ -81,6 +89,15 @@ class EdgeNodeAgent:
             "runtime_mode": "DEGRADED",
             "roi_state": "UNAVAILABLE",
             "roi_version": 0,
+            "motion_ratio": 0.0,
+            "motion_active": False,
+            "scene_state": "UNCALIBRATED",
+            "scene_change_score": 0.0,
+            "roi_source": "none",
+            "ring_buffer_ready": False,
+            "ring_buffer_segments": 0,
+            "ring_buffer_bytes": 0,
+            "ring_buffer_coverage_sec": 0.0,
         }
         self.capabilities = EdgeCapabilities.model_validate(config.get("capabilities", {}))
         spool = Path(config.get("spool_path", "runtime_data/edge_node/outbox.sqlite3"))
@@ -114,12 +131,18 @@ class EdgeNodeAgent:
         self.motion_watcher = (
             EdgeMotionWatcher(**watcher_config) if watcher_config else None
         )
-        pose_shadow_config = config.get("pose_shadow_config")
-        self.pose_shadow = (
-            EdgePoseShadow(self.motion_watcher, **pose_shadow_config)
-            if pose_shadow_config and self.motion_watcher is not None
+        site_runtime_config = config.get("site_runtime_config")
+        self.site_runtime = (
+            EdgeSiteRuntime(site_runtime_config, self.motion_watcher)
+            if site_runtime_config and self.motion_watcher is not None
             else None
         )
+        pose_shadow_config = config.get("pose_shadow_config")
+        self.pose_shadow = None
+        if pose_shadow_config and self.motion_watcher is not None:
+            from edge_pose_shadow import EdgePoseShadow
+
+            self.pose_shadow = EdgePoseShadow(self.motion_watcher, **pose_shadow_config)
         if self.pose_shadow is not None:
             self.pose_shadow.on_result = self.queue_pose_shadow_result
 
@@ -171,6 +194,11 @@ class EdgeNodeAgent:
         self.state["watcher_fps"] = float(motion["watcher_fps"])
         self.state["runtime_mode"] = "BURST" if motion["burst_active"] else "EMPTY"
 
+    def refresh_site_state(self) -> None:
+        if self.site_runtime is None:
+            return
+        self.state.update(self.site_runtime.refresh())
+
     def update_runtime(self, **state) -> None:
         allowed = set(self.state)
         unknown = set(state) - allowed
@@ -181,6 +209,7 @@ class EdgeNodeAgent:
     def heartbeat(self) -> EdgeHeartbeat:
         self.refresh_capture_health()
         self.refresh_motion_state()
+        self.refresh_site_state()
         spool = self.outbox.stats()
         payload = EdgeHeartbeat(
             node_id=self.node_id,
@@ -201,6 +230,15 @@ class EdgeNodeAgent:
             spool_bytes=spool["payload_bytes"],
             storage_free_mb=storage_free_mb(self.outbox.path.parent),
             capabilities=self.capabilities,
+            motion_ratio=float(self.state["motion_ratio"]),
+            motion_active=bool(self.state["motion_active"]),
+            scene_state=self.state["scene_state"],
+            scene_change_score=float(self.state["scene_change_score"]),
+            roi_source=str(self.state["roi_source"]),
+            ring_buffer_ready=bool(self.state["ring_buffer_ready"]),
+            ring_buffer_segments=int(self.state["ring_buffer_segments"]),
+            ring_buffer_bytes=int(self.state["ring_buffer_bytes"]),
+            ring_buffer_coverage_sec=float(self.state["ring_buffer_coverage_sec"]),
         )
         self.sequence += 1
         self.sequence_path.parent.mkdir(parents=True, exist_ok=True)
@@ -210,6 +248,7 @@ class EdgeNodeAgent:
         return payload
 
     def _post(self, endpoint: str, payload: dict) -> bool:
+        payload = self.wire_payload(endpoint, payload)
         request = urllib.request.Request(
             self.server_url + endpoint,
             data=json.dumps(payload, separators=(",", ":")).encode(),
@@ -224,6 +263,14 @@ class EdgeNodeAgent:
                 return 200 <= response.status < 300
         except (urllib.error.URLError, TimeoutError):
             return False
+
+    def wire_payload(self, endpoint: str, payload: dict) -> dict:
+        """Keep old strict servers usable until their contract is upgraded."""
+        result = dict(payload)
+        if endpoint == "/edge/heartbeat" and not self.send_site_telemetry:
+            for field in SITE_TELEMETRY_FIELDS:
+                result.pop(field, None)
+        return result
 
     def cycle(self, *, flush: bool = True) -> dict:
         queued = self.writer.submit(self.heartbeat())

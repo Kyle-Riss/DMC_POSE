@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build non-promotable 20 Hz GRU windows from reviewed staged recordings.
+"""Build non-promotable GRU windows from reviewed staged recordings.
 
 The staged corpus has synchronized multiview recordings but no authoritative
 subject identity. Camera views of a recording stay locked to one split, and
@@ -30,6 +30,25 @@ POSITIVE_STATUSES = {"complete", "needs_adjudication"}
 HARD_NEGATIVE_MARKER = "hard negative"
 SPLITS = ("train", "val", "test")
 SPLIT_SEED = 20260824
+SOURCE_SAMPLE_HZ = 20.0
+
+
+def resample_observed_frame(frame: pd.DataFrame, target_hz: float) -> pd.DataFrame:
+    """Deterministically decimate the observed 20 Hz source without interpolation."""
+    ratio = SOURCE_SAMPLE_HZ / float(target_hz)
+    stride = int(round(ratio))
+    if target_hz <= 0 or abs(ratio - stride) > 1e-6:
+        raise ValueError("target sample rate must evenly divide the 20 Hz source")
+    if stride == 1:
+        return frame.copy()
+    group_columns = [name for name in ("sequence_id", "track_id") if name in frame.columns]
+    if not group_columns:
+        return frame.iloc[::stride].reset_index(drop=True)
+    pieces = [
+        group.iloc[::stride]
+        for _, group in frame.groupby(group_columns, sort=False, dropna=False)
+    ]
+    return pd.concat(pieces).sort_values("timestamp_sec").reset_index(drop=True)
 
 
 def recording_splits(recording_labels: dict[str, int]) -> dict[str, str]:
@@ -104,11 +123,14 @@ def apply_reviewed_target(frame: pd.DataFrame, annotation: dict[str, str], label
     return output
 
 
-def build(features_dir: Path, annotations_path: Path, out_dir: Path) -> dict:
+def build(features_dir: Path, annotations_path: Path, out_dir: Path, *, sample_hz: float = 20.0) -> dict:
     feature_index = json.loads((features_dir / "features_index.json").read_text(encoding="utf-8"))
-    contract = observed_sequence_contract(20.0)
-    if feature_index.get("sequence_contract_version") != contract:
+    source_contract = observed_sequence_contract(SOURCE_SAMPLE_HZ)
+    if feature_index.get("sequence_contract_version") != source_contract:
         raise ValueError("source features are not observed_only_20hz_v1")
+    contract = observed_sequence_contract(sample_hz)
+    window_rows = int(round(4.0 * sample_hz))
+    stride_rows = max(1, int(round(0.25 * sample_hz)))
     with annotations_path.open(newline="", encoding="utf-8-sig") as handle:
         rows = list(csv.DictReader(handle))
     selected, labels = reviewed_recordings(rows)
@@ -118,7 +140,7 @@ def build(features_dir: Path, annotations_path: Path, out_dir: Path) -> dict:
         for row in feature_index.get("results", []) if row.get("status") in {"ok", "skipped"}
     }
     by_split = {split: {"x": [], "y": [], "meta": []} for split in SPLITS}
-    min_interval, max_interval = cadence_interval_bounds(20.0)
+    min_interval, max_interval = cadence_interval_bounds(sample_hz)
     excluded = []
     for recording in sorted(selected):
         for annotation in sorted(selected[recording], key=lambda row: row["video_id"]):
@@ -129,8 +151,9 @@ def build(features_dir: Path, annotations_path: Path, out_dir: Path) -> dict:
                 continue
             split = splits[recording]
             frame = apply_reviewed_target(pd.read_csv(path), annotation, labels[recording], split)
+            frame = resample_observed_frame(frame, sample_hz)
             windows, targets, metadata, names = windows_from_video(
-                frame, 80, 5, min_interval_sec=min_interval, max_interval_sec=max_interval,
+                frame, window_rows, stride_rows, min_interval_sec=min_interval, max_interval_sec=max_interval,
             )
             if names != temporal_feature_names():
                 raise ValueError("feature order mismatch")
@@ -150,7 +173,7 @@ def build(features_dir: Path, annotations_path: Path, out_dir: Path) -> dict:
 
     out_dir.mkdir(parents=True, exist_ok=True)
     report = {
-        "window_schema_version": "pose_gru_reviewed_staged_shadow_v1",
+        "window_schema_version": "pose_gru_reviewed_staged_shadow_v2_resampled",
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
         "sequence_contract_version": contract,
         "data_provenance": "manual_multiview_reviewed_hospital_staged",
@@ -166,9 +189,9 @@ def build(features_dir: Path, annotations_path: Path, out_dir: Path) -> dict:
         "negative_policy": "excluded recordings enter only when every view is explicitly marked hard negative",
         "window_sec": 4.0,
         "stride_sec": 0.25,
-        "sample_hz": 20.0,
-        "window_rows": 80,
-        "stride_rows": 5,
+        "sample_hz": sample_hz,
+        "window_rows": window_rows,
+        "stride_rows": stride_rows,
         "feature_count": 109,
         "feature_names": temporal_feature_names(),
         "recording_splits": dict(sorted(splits.items())),
@@ -186,7 +209,7 @@ def build(features_dir: Path, annotations_path: Path, out_dir: Path) -> dict:
         x = np.asarray(values["x"], dtype=np.float32)
         y = np.asarray(values["y"], dtype=np.int64)
         if not len(x):
-            x = np.empty((0, 80, 109), dtype=np.float32)
+            x = np.empty((0, window_rows, 109), dtype=np.float32)
         np.savez_compressed(out_dir / f"{split}.npz", x=x, y=y)
         (out_dir / f"{split}_metadata.json").write_text(
             json.dumps(values["meta"], ensure_ascii=False, indent=2), encoding="utf-8"
@@ -208,8 +231,9 @@ def main() -> int:
     parser.add_argument("--features-dir", type=Path, default=PROJECT_ROOT / "external_datasets/features/pose_109_observed_only_20hz/usb_sim_falldown_full")
     parser.add_argument("--annotations", type=Path, default=PROJECT_ROOT / "external_datasets/annotations/usb_sim_falldown_temporal_v1.csv")
     parser.add_argument("--out-dir", type=Path, default=PROJECT_ROOT / "external_datasets/windows/pose_gru_109_observed_only_20hz/usb_reviewed_staged_shadow_v1_4s")
+    parser.add_argument("--sample-hz", type=float, default=20.0)
     args = parser.parse_args()
-    report = build(args.features_dir.resolve(), args.annotations.resolve(), args.out_dir.resolve())
+    report = build(args.features_dir.resolve(), args.annotations.resolve(), args.out_dir.resolve(), sample_hz=args.sample_hz)
     print(json.dumps({key: report[key] for key in ("promotion_eligible", "recording_label_counts", "splits", "excluded")}, ensure_ascii=False, indent=2))
     print(f"window_index: {(args.out_dir / 'window_index.json').resolve()}")
     return 0

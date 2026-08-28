@@ -40,6 +40,8 @@ class EdgeCapabilities(StrictModel):
     temporal_inference: bool = False
     fusion: bool = False
     event_frame_upload: bool = False
+    scene_guard: bool = False
+    encoded_ring_buffer: bool = False
 
 
 class EdgeHeartbeat(StrictModel):
@@ -62,6 +64,15 @@ class EdgeHeartbeat(StrictModel):
     spool_bytes: int = Field(ge=0)
     storage_free_mb: float = Field(ge=0)
     capabilities: EdgeCapabilities
+    motion_ratio: float = Field(default=0.0, ge=0, le=1)
+    motion_active: bool = False
+    scene_state: Literal["UNCALIBRATED", "STABLE", "CHANGED"] = "UNCALIBRATED"
+    scene_change_score: float = Field(default=0.0, ge=0, le=1)
+    roi_source: str = Field(default="none", max_length=64)
+    ring_buffer_ready: bool = False
+    ring_buffer_segments: int = Field(default=0, ge=0)
+    ring_buffer_bytes: int = Field(default=0, ge=0)
+    ring_buffer_coverage_sec: float = Field(default=0.0, ge=0)
 
     _sent_at_tz = field_validator("sent_at")(_timezone_required)
 

@@ -1,0 +1,21 @@
+[Unit]
+Description=DMC POSE CM4 camera appliance telemetry
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=moredigm
+Group=moredigm
+WorkingDirectory=/home/moredigm/dmc_cm4_camera_appliance
+ExecStart=/home/moredigm/dmc_cm4_camera_appliance/venv/bin/python /home/moredigm/dmc_cm4_camera_appliance/edge_node_agent.py --config /home/moredigm/.config/dmc_pose/camera_appliance.json
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/moredigm/.local/state/dmc_pose
+
+[Install]
+WantedBy=multi-user.target

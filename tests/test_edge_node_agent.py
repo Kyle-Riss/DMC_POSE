@@ -85,6 +85,51 @@ def test_motion_watcher_updates_public_runtime_state(tmp_path):
     assert heartbeat.runtime_mode == "BURST"
 
 
+def test_site_runtime_facts_are_added_to_heartbeat(tmp_path):
+    class FakeSiteRuntime:
+        def refresh(self):
+            return {
+                "motion_ratio": 0.2,
+                "motion_active": True,
+                "scene_state": "STABLE",
+                "scene_change_score": 0.03,
+                "roi_state": "READY",
+                "roi_version": 4,
+                "roi_source": "fixed_profile",
+                "ring_buffer_ready": True,
+                "ring_buffer_segments": 12,
+                "ring_buffer_bytes": 4096,
+                "ring_buffer_coverage_sec": 24.0,
+            }
+
+    agent = EdgeNodeAgent(config(tmp_path))
+    agent.site_runtime = FakeSiteRuntime()
+    heartbeat = agent.heartbeat()
+    assert heartbeat.scene_state == "STABLE"
+    assert heartbeat.roi_state == "READY"
+    assert heartbeat.ring_buffer_ready is True
+    assert heartbeat.motion_ratio == 0.2
+
+
+def test_site_telemetry_is_stripped_for_legacy_server_by_default(tmp_path):
+    agent = EdgeNodeAgent(config(tmp_path))
+    payload = agent.heartbeat().model_dump(mode="json")
+    wire = agent.wire_payload("/edge/heartbeat", payload)
+    assert "scene_state" not in wire
+    assert "ring_buffer_ready" not in wire
+    assert wire["roi_state"] == "UNAVAILABLE"
+
+
+def test_site_telemetry_can_be_enabled_after_server_upgrade(tmp_path):
+    value = config(tmp_path)
+    value["send_site_telemetry"] = True
+    agent = EdgeNodeAgent(value)
+    payload = agent.heartbeat().model_dump(mode="json")
+    wire = agent.wire_payload("/edge/heartbeat", payload)
+    assert wire["scene_state"] == "UNCALIBRATED"
+    assert wire["ring_buffer_ready"] is False
+
+
 def test_pose_shadow_result_uses_durable_authenticated_contract(tmp_path):
     agent = EdgeNodeAgent(config(tmp_path))
     agent.writer.start()

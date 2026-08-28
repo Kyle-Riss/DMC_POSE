@@ -1,31 +1,33 @@
-# DMC Local Service
+# DMC POSE local operations
 
-이 폴더는 현장 서비스 실행용입니다.
-
-## 시작
-
-터미널에서 다음 명령만 실행합니다.
+The operator entry point is `/home/dmc/AI/DMC_POSE`.
 
 ```bash
 cd /home/dmc/AI/DMC_POSE
-./run.sh
+./run.sh status
+./run.sh viewer
 ```
 
-## 화면 접속
+Start the service only when it is not ready:
 
-```text
-http://<서버-IP>:8000/viewer
+```bash
+./run.sh start
 ```
 
-## 종료
+For a non-mutating diagnosis:
 
-서비스를 실행한 터미널에서 `Ctrl+C`를 누릅니다.
+```bash
+./run.sh health
+./run.sh doctor
+./run.sh shadow-status
+```
 
-## 주의
+The Viewer uses `http://<server-ip>:8030/viewer`. Do not use the historical
+standalone-source `:8000` instructions for the protected service.
 
-- 내부 파일과 설정은 수정하지 않습니다.
-- 같은 서비스를 두 번 실행하지 않습니다.
-- 문제가 발생하면 로그 전체를 수정하지 말고 담당 개발자에게 전달합니다.
-- 소스, 설정, 데이터 및 실행 파일을 외부로 복사하지 않습니다.
+A shadow deployment is not a normal restart. First run the matching read-only
+plan, review the model contract and files, and only then use the deploy command.
+Both available shadow routes remain telemetry-only and keep Fusion disabled.
 
-세부 동작과 내부 구조는 운영 대상이 아닙니다.
+Do not edit `/opt/.company-core` directly or delete `runs`, `build`, weights,
+datasets, or runtime evidence.

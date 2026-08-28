@@ -52,3 +52,20 @@ def test_target_policy():
     assert out["subject_id"].unique().tolist() == ["unknown_staged_subject"]
     negative = MODULE.apply_reviewed_target(frame, row("n", "excluded"), 0, "test")
     assert set(negative["target"]) == {"non_fall"}
+
+
+def test_resample_observed_frame_20_to_10hz_preserves_real_rows():
+    frame = pd.DataFrame({
+        "timestamp_sec": [0.00, 0.05, 0.10, 0.15, 0.20],
+        "frame_idx": [0, 1, 2, 3, 4],
+        "sequence_id": [1] * 5,
+        "track_id": [7] * 5,
+    })
+    result = MODULE.resample_observed_frame(frame, 10.0)
+    assert result["timestamp_sec"].tolist() == [0.0, 0.1, 0.2]
+    assert result["frame_idx"].tolist() == [0, 2, 4]
+
+
+def test_resample_rejects_non_divisor_rate():
+    with pytest.raises(ValueError, match="evenly divide"):
+        MODULE.resample_observed_frame(pd.DataFrame(), 12.0)

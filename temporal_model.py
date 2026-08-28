@@ -69,6 +69,13 @@ class FallGRU(nn.Module):
         return self.output(hidden[-1]).squeeze(1)
 
 
+class FallSmallGRU(FallGRU):
+    """Capacity-controlled GRU for small, recording-limited datasets."""
+
+    def __init__(self, feature_count: int):
+        super().__init__(feature_count, hidden_size=32, layers=1, dropout=0.0)
+
+
 class FallBiLSTM(nn.Module):
     def __init__(self, feature_count: int, hidden_size: int = 128, layers: int = 2, dropout: float = 0.2):
         super().__init__()
@@ -142,6 +149,7 @@ class FallTemporalTransformer(nn.Module):
 MODEL_ARCHITECTURES = (
     LEGACY_ARCHITECTURE,
     "gru_v1",
+    "gru_small_v1",
     "bilstm_v1",
     "temporal_transformer_v1",
 )
@@ -159,6 +167,7 @@ def build_temporal_model(architecture: str, feature_count: int) -> nn.Module:
         "tcn": FallTCN,
         "gru_v1": FallGRU,
         "gru": FallGRU,
+        "gru_small_v1": FallSmallGRU,
         "bilstm_v1": FallBiLSTM,
         "bilstm": FallBiLSTM,
         "temporal_transformer_v1": FallTemporalTransformer,

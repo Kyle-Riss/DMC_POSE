@@ -19,6 +19,8 @@ MODULES = (
     "temporal_model",
     "temporal_features",
     "temporal_sequence",
+    "swin3d_verifier",
+    "video_verifier_runtime",
 )
 
 

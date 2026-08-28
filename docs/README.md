@@ -1,54 +1,54 @@
-# DMC POSE 문서 인덱스
+# DMC POSE documentation index
 
-현재 설계 기준선은 `architecture_v2/`입니다. 기존 문서는 배경과 이전 구현 기록으로 보존하며, 새 구현 판단은 Architecture V2와 `runtime_artifact.json`을 우선합니다.
+문서는 **현재 기준**, **운영·검증 근거**, **역사 문서**로 구분합니다. 서로 충돌할
+때는 아래 현재 기준 문서를 우선합니다.
 
 ## 처음 읽는 순서
 
-1. `BLACKBOX_RUNTIME_GUIDE.md` — 비개발자용 런타임 설명
-2. `architecture_v2/00_REQUIREMENTS.md` — 목표와 절대 제약
-3. `architecture_v2/01_RUNTIME_ARCHITECTURE.md` — 전체 런타임 구조
-4. `architecture_v2/02_CAMERA_STATE_MACHINE.md` — 절전과 wake-up 상태 전이
-5. `architecture_v2/03_INFERENCE_AND_FUSION.md` — 하이브리드 모델 계약
-6. `architecture_v2/04_OPERATIONS_AND_ACCEPTANCE.md` — 운영과 합격 기준
-7. `architecture_v2/05_IMPLEMENTATION_ROADMAP.md` — Phase별 구현 순서
-8. `runtime_artifact.json` — 현재 실행본과 정책 스냅샷
+1. [CURRENT_ARCHITECTURE.md](CURRENT_ARCHITECTURE.md) — 현재 배포 경계와 flowchart
+2. [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) — 개발·테스트·배포 인수인계
+3. [PRODUCTION_GRU_CHECKLIST_2026-08-24.md](PRODUCTION_GRU_CHECKLIST_2026-08-24.md) — 완료/차단 상태
+4. [architecture_v2/13_CENTRAL_MAX_CADENCE_CONTRACT.md](architecture_v2/13_CENTRAL_MAX_CADENCE_CONTRACT.md) — 시간축·소유권 계약
+5. [FILE_AUDIT_2026-08-28.md](FILE_AUDIT_2026-08-28.md) — 정리 전후 보존 근거
 
-## 프로젝트 기여·이력서 기록
+## 현재 운영·개발 문서
 
-- `PROJECT_CONTRIBUTION_AND_RESUME_RECORD_2026-08-10.md` — 실제 구현 범위, 검증 수치, 이력서 권장 문장과 과장 방지 경계
-- `AUTOMATIC_TEMPORAL_EVENT_CAPTURE_2026-08-10.md` — 자동 시작·종료 트리거, 109D 세션 아티팩트, Mermaid 데이터 흐름
-- `REVIEWED_HYBRID_TCN_EXPERIMENT_2026-08-10.md` — FallVision 수동 양성+자체 정상 통합, 동결 평가, 승격 보류 근거
-- `reviewed_hybrid_tcn_dashboard_2026-08-10.svg` — 동결 test recall과 false events/hour 시각 비교
-- `FALL_DETECTION_OPERATIONAL_READINESS_2026-08-14.md` — hybrid v6 실사용 준비도, 실제 기록 재생 결과, Go/No-Go 표와 승격 기준
-- `FALL_EVENT_LOG_POSE_EVIDENCE_2026-08-14.md` — bed_161 통제 낙상 로그와 영상 유래 109D 스켈레톤을 병합한 재현 가능한 단일 사건 근거
+- [CM4_CAMERA_APPLIANCE_V1.md](CM4_CAMERA_APPLIANCE_V1.md)
+- [SITE_FINETUNE_QUICKSTART.md](SITE_FINETUNE_QUICKSTART.md)
+- [TEMPORAL_LABEL_PROTOCOL_V1.md](TEMPORAL_LABEL_PROTOCOL_V1.md)
+- [EXTERNAL_RESOURCE_AUDIT_2026-08-24.md](EXTERNAL_RESOURCE_AUDIT_2026-08-24.md)
+- [CENTRAL_20HZ_DATA_READINESS_2026-08-24.md](CENTRAL_20HZ_DATA_READINESS_2026-08-24.md)
+- [GRU_DIAGNOSTIC_TRAINING_2026-08-24.md](GRU_DIAGNOSTIC_TRAINING_2026-08-24.md)
 
-## 현재 구현 상태
+## 성능 근거
 
-| Phase | 내용 | 상태 |
-|---|---|---|
-| 1 | 영상 캡처와 Viewer/AI 경로 분리 | 완료 |
-| 2 | 자동 침대 ROI | 완료 |
-| 3 | 20Hz 경량 watcher와 10Hz 시계열 입력 | 완료 |
-| 4 | 중앙 latest-only 우선순위 스케줄러 | 완료 |
-| 5 | 다중 사람 추적과 track별 TCN 버퍼 | 완료 |
-| 6 | 침대·pose·motion·TCN 하이브리드 fusion | 완료 |
-| 7 | TCN 성숙도 감사 | 완료, shadow-only |
-| 8 | 영상 미저장 feature recorder | 완료 |
-| 9 | 리뷰 ledger와 정책별 calibration | 완료 |
-| 10 | 운영 장시간 검증과 배포 경계 확정 | 다음 단계 |
+PNG/SVG dashboard는 보기 좋은 요약일 뿐, promotion 근거를 대신하지 않습니다.
 
-각 Phase의 근거는 `architecture_v2/PHASE_*.md`에서 확인합니다.
+- `gru_shadow_training_performance_20260828.*`
+- `gru_model_comparison_20260828.*`
+- `gru_10hz_20hz_comparison_20260828.*`
+- `deployed_model_performance_20260824.svg`
+- `central_temporal_compute_benchmark_20260824.*`
 
-## 다이어그램
+정확한 수치는 해당 run의 `report.json`과 데이터 경고를 함께 읽습니다.
 
-- `architecture_v2/*.mmd`: 현재 Architecture V2와 Phase별 Mermaid
-- `diagrams/*.mmd`: 시스템·시작·추론·장애 흐름
-- `canvas/`: 별도 Canvas 렌더링 자료
+## Architecture V2
 
-## 이전 문서
+`architecture_v2/`는 중앙 latest-frame, scheduler, tracking, fusion으로 진화한
+설계 기록입니다. 13번 max-cadence 계약은 현재 기준이고, 00–12번 문서에는 당시
+10Hz TCN·Pi-first·Edge-first 설계가 남아 있습니다.
 
-`IMPLEMENTATION_PLAN.md`, `PHASE_2.md`, `PHASE_TIMESERIES.md`, `PARALLEL_GPU_PIPELINE.md`, `MULTI_CAMERA_GUIDE.md`, `SMART_CAMERA_PIPELINE_PLAN.md`, `TIMESERIES_STRATEGY.md`는 참고 자료입니다. 현재 코드와 충돌하면 Architecture V2를 따릅니다.
+## 역사 문서
 
-## 인수인계
+다음 문서는 삭제하지 않고 설계 이력으로 보존합니다. 경로·포트·모델 계약을 현재
+운영 명령으로 그대로 사용하지 않습니다.
 
-전송 패키지 범위와 복원 순서는 `REPOSITORY_HANDOFF.md`를 참조합니다. 카메라 인증정보, 실제 영상, 데이터셋, 모델 가중치는 소스 ZIP에 포함하지 않습니다.
+- `PHASE_*.md`, `IMPLEMENTATION_PLAN.md`, `NEXT_EXECUTION_PLAN_2026-08-07.md`
+- `SMART_CAMERA_PIPELINE_PLAN.md`, `EDGE_FIRST_ARCHITECTURE_V1.md`
+- `MULTI_CAMERA_GUIDE.md`, `RPI_RTSP_TCN_SHADOW.md`
+- `diagrams/`의 기존 `:8000` / `run_all_cameras.sh` 흐름
+- `runtime_artifact.json`: 2026-08-07 TCN snapshot이며 현재 배포 설명이 아님
+- 루트 `PROJECT_README.md`, `FASTAPI_PLAN.md`: 초기 독립 실행 문서
+
+현재 운영은 `/home/dmc/AI/DMC_POSE/run.sh`와 Viewer `:8030`을 사용합니다.
+소스 독립 개발 서버의 `:8000` 문서와 혼동하지 마십시오.

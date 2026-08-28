@@ -84,3 +84,6 @@ bed_seg/live_*.jpg
 *.bak
 *.backup
 bed_monitor.backup/
+
+# Generated deployment and handoff archives
+artifacts/

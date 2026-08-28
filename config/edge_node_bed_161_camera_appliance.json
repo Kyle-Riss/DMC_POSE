@@ -3,7 +3,7 @@
   "camera_id": "bed_161",
   "server_url": "http://192.168.0.108:8020",
   "api_token_file": "/home/moredigm/.config/dmc_pose/edge_api_token",
-  "software_version": "edge-agent-cm4-canary-v1",
+  "software_version": "cm4-camera-appliance-v1",
   "send_site_telemetry": false,
   "model_bundle_version": null,
   "heartbeat_interval_sec": 5,
@@ -12,11 +12,7 @@
   "capture_health": {
     "tcp_host": "127.0.0.1",
     "tcp_port": 8554,
-    "required_processes": [
-      "mediamtx",
-      "rpicam-vid",
-      "ffmpeg"
-    ]
+    "required_processes": ["mediamtx", "rpicam-vid", "ffmpeg"]
   },
   "capabilities": {
     "camera_capture": true,
@@ -61,21 +57,5 @@
       "maximum_segment_age_sec": 10
     }
   },
-  "pose_shadow_config": {
-    "rtsp_url": "rtsp://127.0.0.1:8554/stream",
-    "model_path": "/home/moredigm/dmc_pose_edge_canary/models/cm4-onnx-candidate-v1/yolo11n-pose.onnx",
-    "ffmpeg_path": "/usr/bin/ffmpeg",
-    "width": 640,
-    "height": 360,
-    "input_size": 320,
-    "confidence": 0.25,
-    "rotation_degrees": 90,
-    "capture_timeout_sec": 5,
-    "poll_interval_sec": 0.05,
-    "status_path": "/home/moredigm/.local/state/dmc_pose/pose_shadow_status.json",
-    "log_path": "/home/moredigm/.local/state/dmc_pose/pose_shadow_events.jsonl"
-  },
-  "pose_result_sequence_path": "/home/moredigm/.local/state/dmc_pose/pose_result_sequence",
-  "pose_shadow_model_bundle_version": "cm4-onnx-candidate-v1",
   "sender_poll_sec": 0.1
 }

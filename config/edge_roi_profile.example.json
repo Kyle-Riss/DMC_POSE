@@ -1,0 +1,12 @@
+{
+  "schema_version": "dmc_edge_roi_profile_v1",
+  "camera_id": "bed_161",
+  "version": 1,
+  "source": "fixed_profile",
+  "polygon_norm": [
+    [0.15, 0.15],
+    [0.85, 0.15],
+    [0.90, 0.85],
+    [0.10, 0.85]
+  ]
+}

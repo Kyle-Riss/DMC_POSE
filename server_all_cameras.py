@@ -51,6 +51,11 @@ from temporal_session_recorder import (
     TemporalEventSessionRecorder,
     derive_temporal_session_triggers,
 )
+from swin3d_verifier import Swin3DVerifierService
+from video_verifier_runtime import (
+    CandidateVideoVerifierRuntime,
+    verifier_trigger_active,
+)
 from pose_candidate_filter import accept_pose_candidate, select_tracking_bbox
 from async_replay_worker import AsyncReplayWorker
 from runtime_health import evaluate_fleet, render_prometheus
@@ -161,6 +166,9 @@ TCN_FUSION_ENABLED = os.environ.get('POSE_TCN_FUSION_ENABLED', '1') == '1'
 CENTRAL_POSE_ALWAYS_ON = os.environ.get(
     'POSE_CENTRAL_ALWAYS_ON', '0'
 ) == '1'
+MOTION_WATCHER_ENABLED = os.environ.get(
+    'POSE_MOTION_WATCHER_ENABLED', '1'
+) == '1'
 MOTION_WATCHER_FPS = float(os.environ.get('POSE_MOTION_WATCHER_FPS', '20'))
 MOTION_SMALL_WIDTH = int(os.environ.get('POSE_MOTION_SMALL_WIDTH', '160'))
 MOTION_SMALL_HEIGHT = int(os.environ.get('POSE_MOTION_SMALL_HEIGHT', '90'))
@@ -204,6 +212,36 @@ PRE_EVENT_REPLAY_HOLD_SEC = float(os.environ.get(
 ))
 PRE_EVENT_REPLAY_DEADLINE_SEC = float(os.environ.get(
     'POSE_PRE_EVENT_REPLAY_DEADLINE_SEC', '6.0'
+))
+VIDEO_VERIFIER_ENABLED = os.environ.get(
+    'POSE_VIDEO_VERIFIER_ENABLED', '0'
+) == '1'
+VIDEO_VERIFIER_WEIGHT_PATH = Path(os.environ.get(
+    'POSE_VIDEO_VERIFIER_WEIGHT',
+    PROJECT_ROOT / 'external_models/torchvision/swin3d_b_22k-7c6ae6fa.pth',
+))
+VIDEO_VERIFIER_PROBE_PATH = Path(os.environ.get(
+    'POSE_VIDEO_VERIFIER_PROBE',
+    PROJECT_ROOT / 'runs/video_verifier/swin3d_b_staged_delta_v2_20260828/delta_probe.npz',
+))
+VIDEO_VERIFIER_DEVICE = os.environ.get('POSE_VIDEO_VERIFIER_DEVICE', 'cuda')
+VIDEO_VERIFIER_DURATION_SEC = float(os.environ.get(
+    'POSE_VIDEO_VERIFIER_BUFFER_SEC', '10.0'
+))
+VIDEO_VERIFIER_SAMPLE_HZ = float(os.environ.get(
+    'POSE_VIDEO_VERIFIER_SAMPLE_HZ', '5.0'
+))
+VIDEO_VERIFIER_FRAME_WIDTH = int(os.environ.get(
+    'POSE_VIDEO_VERIFIER_FRAME_WIDTH', '320'
+))
+VIDEO_VERIFIER_ABSOLUTE_THRESHOLD = float(os.environ.get(
+    'POSE_VIDEO_VERIFIER_ABSOLUTE_THRESHOLD', '0.439'
+))
+VIDEO_VERIFIER_DELTA_THRESHOLD = float(os.environ.get(
+    'POSE_VIDEO_VERIFIER_DELTA_THRESHOLD', '0.10'
+))
+VIDEO_VERIFIER_REARM_SEC = float(os.environ.get(
+    'POSE_VIDEO_VERIFIER_REARM_SEC', '10.0'
 ))
 EMPTY_POSE_PROBE_HZ = float(os.environ.get('POSE_EMPTY_PROBE_HZ', '0.75'))
 OCCUPIED_POSE_INTERVAL_SEC = float(os.environ.get(
@@ -769,6 +807,24 @@ class CameraState(BaseModel):
     fusion_quality: float = 0.0
     fusion_track_id: int | None = None
     fusion_policy_version: str = FUSION_POLICY_VERSION
+    video_verifier_enabled: bool = False
+    video_verifier_running: bool = False
+    video_verifier_ready: bool = False
+    video_verifier_candidate: bool = False
+    video_verifier_baseline: float | None = None
+    video_verifier_post_max: float | None = None
+    video_verifier_delta: float | None = None
+    video_verifier_pair_probability: float | None = None
+    video_verifier_decision_mode: str = "disabled"
+    video_verifier_threshold: float = 0.0
+    video_verifier_latency_ms: float = 0.0
+    video_verifier_trigger_total: int = 0
+    video_verifier_completed_total: int = 0
+    video_verifier_error_total: int = 0
+    video_verifier_last_error: str | None = None
+    video_verifier_ring_frames: int = 0
+    video_verifier_ring_coverage_sec: float = 0.0
+    video_verifier_authority: str = "telemetry_only"
     feature_recorder_enabled: bool = False
     feature_recorder_thread_alive: bool = False
     feature_recorder_written_total: int = 0
@@ -785,6 +841,7 @@ analysis_running = False
 inference_pool = None
 inference_scheduler = None
 temporal_service = None
+video_verifier_service = None
 shadow_recorder = None
 temporal_session_recorder = None
 edge_signal_client = None
@@ -792,6 +849,7 @@ edge_signal_client = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global analysis_running, inference_pool, inference_scheduler, temporal_service
+    global video_verifier_service
     global shadow_recorder, temporal_session_recorder
     global edge_signal_client
     global camera_captures, bed_roi_managers, motion_watchers
@@ -875,6 +933,23 @@ async def lifespan(app: FastAPI):
             )
         except Exception as exc:
             logging.exception(f"[TCN shadow] disabled: {exc}")
+    video_verifier_service = None
+    if VIDEO_VERIFIER_ENABLED:
+        try:
+            video_verifier_service = Swin3DVerifierService(
+                VIDEO_VERIFIER_WEIGHT_PATH,
+                VIDEO_VERIFIER_PROBE_PATH,
+                device=VIDEO_VERIFIER_DEVICE,
+            )
+            logging.info(
+                "[video verifier shadow] loaded %s on %s; mode=%s threshold=%.4f",
+                VIDEO_VERIFIER_WEIGHT_PATH,
+                VIDEO_VERIFIER_DEVICE,
+                video_verifier_service.feature_mode,
+                video_verifier_service.threshold,
+            )
+        except Exception as exc:
+            logging.exception("[video verifier shadow] disabled: %s", exc)
     analysis_running = True
     camera_captures = {
         cid: LatestFrameCapture(
@@ -898,7 +973,7 @@ async def lifespan(app: FastAPI):
         )
         for cid in CAMERA_CONFIGS
     }
-    motion_watchers = {
+    motion_watchers = ({
         cid: MotionWatcher(
             cid,
             camera_captures[cid],
@@ -917,7 +992,7 @@ async def lifespan(app: FastAPI):
             pre_event_jpeg_quality=PRE_EVENT_JPEG_QUALITY,
         )
         for cid in CAMERA_CONFIGS
-    }
+    } if MOTION_WATCHER_ENABLED else {})
     for capture in camera_captures.values():
         capture.start()
     for cid, watcher in motion_watchers.items():
@@ -931,7 +1006,8 @@ async def lifespan(app: FastAPI):
             args=(
                 cid, camera_captures[cid], inference_scheduler, keras_clf,
                 keras_replay_clf, temporal_service,
-                bed_roi_managers[cid], motion_watchers[cid],
+                video_verifier_service,
+                bed_roi_managers[cid], motion_watchers.get(cid),
                 edge_signal_client, temporal_session_recorder,
             ),
             daemon=True,
@@ -966,6 +1042,7 @@ def run_analysis(
     keras_clf,
     keras_replay_clf,
     temporal_service=None,
+    video_verifier_service=None,
     bed_roi_manager: AutoBedROIManager | None = None,
     motion_watcher: MotionWatcher | None = None,
     signal_client: EdgeSignalClient | None = None,
@@ -1024,6 +1101,19 @@ def run_analysis(
         temporal_service.threshold if temporal_service is not None else 0.0
     )
     replay_worker = AsyncReplayWorker[dict](camera_id)
+    video_verifier = (
+        CandidateVideoVerifierRuntime(
+            camera_id,
+            video_verifier_service,
+            duration_sec=VIDEO_VERIFIER_DURATION_SEC,
+            sample_hz=VIDEO_VERIFIER_SAMPLE_HZ,
+            frame_width=VIDEO_VERIFIER_FRAME_WIDTH,
+            absolute_threshold=VIDEO_VERIFIER_ABSOLUTE_THRESHOLD,
+            delta_threshold=VIDEO_VERIFIER_DELTA_THRESHOLD,
+            rearm_sec=VIDEO_VERIFIER_REARM_SEC,
+        )
+        if video_verifier_service is not None else None
+    )
     previous_session_state = {
         "person_observed": False,
         "edge_wake": False,
@@ -1069,6 +1159,12 @@ def run_analysis(
             continue
         last_capture_seq = packet.frame_seq
         frame = orient_analysis_frame(packet.frame)
+        if video_verifier is not None:
+            video_verifier.observe(
+                frame,
+                frame_seq=packet.frame_seq,
+                mono_ts=packet.capture_mono_ts,
+            )
 
         loop_start = time.perf_counter()
         fh, fw = frame.shape[:2]
@@ -1528,6 +1624,27 @@ def run_analysis(
             verify_priority_until = max(
                 verify_priority_until, time.monotonic() + 3.0
             )
+        if video_verifier is not None:
+            video_verifier.update_trigger(
+                verifier_trigger_active(
+                    rapid_motion=local_burst_active,
+                    fusion_phase=fusion_result.phase.value,
+                ),
+                mono_ts=packet.capture_mono_ts,
+            )
+            video_verifier_status = video_verifier.status()
+        else:
+            video_verifier_status = {
+                "enabled": False, "running": False, "ready": False,
+                "candidate": False, "baseline": None, "post_max": None,
+                "delta": None, "pair_probability": None,
+                "decision_mode": "disabled", "threshold": 0.0,
+                "latency_ms": 0.0, "trigger_total": 0,
+                "completed_total": 0, "error_total": 0,
+                "last_error": None, "ring_pre_event_frames": 0,
+                "ring_pre_event_coverage_sec": 0.0,
+                "authority": "telemetry_only",
+            }
 
         # Automatic feature-only capture.  This is a dataset trigger, never an
         # alert trigger: predictions only mark a session UNREVIEWED for later
@@ -1750,6 +1867,30 @@ def run_analysis(
             s.fusion_candidate_age_sec = float(fusion_result.candidate_age_sec)
             s.fusion_quality = float(fusion_result.quality)
             s.fusion_track_id = fusion_result.track_id
+            s.video_verifier_enabled = bool(video_verifier_status["enabled"])
+            s.video_verifier_running = bool(video_verifier_status["running"])
+            s.video_verifier_ready = bool(video_verifier_status["ready"])
+            s.video_verifier_candidate = bool(video_verifier_status["candidate"])
+            s.video_verifier_baseline = video_verifier_status.get("baseline")
+            s.video_verifier_post_max = video_verifier_status.get("post_max")
+            s.video_verifier_delta = video_verifier_status.get("delta")
+            s.video_verifier_pair_probability = video_verifier_status.get("pair_probability")
+            s.video_verifier_decision_mode = str(video_verifier_status.get("decision_mode", "disabled"))
+            s.video_verifier_threshold = float(video_verifier_status.get("threshold", 0.0))
+            s.video_verifier_latency_ms = float(video_verifier_status["latency_ms"])
+            s.video_verifier_trigger_total = int(video_verifier_status["trigger_total"])
+            s.video_verifier_completed_total = int(video_verifier_status["completed_total"])
+            s.video_verifier_error_total = int(video_verifier_status["error_total"])
+            s.video_verifier_last_error = video_verifier_status.get("last_error")
+            s.video_verifier_ring_frames = int(
+                video_verifier_status.get("ring_pre_event_frames", 0)
+            )
+            s.video_verifier_ring_coverage_sec = float(
+                video_verifier_status.get("ring_pre_event_coverage_sec", 0.0)
+            )
+            s.video_verifier_authority = str(
+                video_verifier_status.get("authority", "telemetry_only")
+            )
             recorder_status = (
                 shadow_recorder.status() if shadow_recorder is not None
                 else {"enabled": False, "thread_alive": False, "written_total": 0,
@@ -1785,6 +1926,9 @@ def run_analysis(
                 motion_watcher.wait_for_burst(frame_sleep)
             else:
                 time.sleep(frame_sleep)
+
+    if video_verifier is not None:
+        video_verifier.close()
 
 @app.get("/recorder/status")
 def get_recorder_status():
