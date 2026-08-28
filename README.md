@@ -113,7 +113,7 @@ install it on a Pi.
 |---|---|
 | `tests/` | unit and contract regression |
 | `scripts/` | dataset, evaluation, training, handoff builders |
-| `docs/` | current contracts plus preserved history |
+| `docs/` | current contracts and validation evidence |
 | `build/` | protected runtime build artifacts; do not delete |
 | `runs/` | checkpoints and reports; do not delete |
 | `external_models/` | external/pretrained weights; do not delete |

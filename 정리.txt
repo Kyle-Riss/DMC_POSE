@@ -1,9 +1,0 @@
-1. data.py => data 폴더에 포즈를 csv 추출
-2. train.py => csv를 학습
-3. run_pose.py => 
-In Bed: YES | Pose: p01 | Rail: 0,0
-In Bed: YES | Pose: p01 | Rail: 0,0
-In Bed: YES | Pose: p05 | Rail: 0,0
-In Bed: NO  | Pose: None| Rail: 0,0
-In Bed: YES | Pose: p12 | Rail: 0,0
-추출 결과
